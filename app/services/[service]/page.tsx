@@ -42,13 +42,13 @@ export default async function ServicePage({
       {/* HEADER */}
       <header className="sticky top-0 z-50 border-b border-white/10 bg-neutral-950/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
-          <a href="/" className="flex items-center gap-2">
+          <a href="/" className="flex items-center gap-3 hover:opacity-90 transition">
   <img
     src="/logo.png"
     alt="Tampa Handyman"
-    className="h-8 w-auto"
+    className="h-9 w-auto object-contain"
   />
-  <span className="text-xl font-bold text-white">
+  <span className="text-lg md:text-xl font-extrabold tracking-wide text-white">
     Tampa Handyman
   </span>
 </a>
