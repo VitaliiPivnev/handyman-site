@@ -1,21 +1,21 @@
+import { business } from "../data/business";
+
 export default function StickyBar() {
   return (
-    <div className="fixed bottom-0 left-0 z-50 w-full bg-black/90 p-3 backdrop-blur md:hidden">
-      <div className="flex gap-3">
-        <a
-          href="tel:+13054650028"
-          className="flex-1 rounded-xl bg-yellow-400 py-3 text-center font-bold text-black"
-        >
-          Call Now
-        </a>
+    <div className="fixed bottom-0 left-0 right-0 z-50 grid grid-cols-2 gap-3 border-t border-white/10 bg-neutral-950 p-3 md:hidden">
+      <a
+        href={`tel:${business.phone}`}
+        className="rounded-xl bg-yellow-400 py-3 text-center font-bold text-black"
+      >
+        Call Now
+      </a>
 
-        <a
-          href="sms:+13054650028"
-          className="flex-1 rounded-xl border border-white py-3 text-center font-bold text-white"
-        >
-          Text
-        </a>
-      </div>
+      <a
+        href="sms:+13054650208"
+        className="rounded-xl border border-white/40 py-3 text-center font-bold text-white"
+      >
+        Text
+      </a>
     </div>
   );
 }
