@@ -231,6 +231,33 @@ export default async function CityPage({
         </div>
       </section>
 
+      {/* SEO TEXT BLOCK */}
+<section className="bg-neutral-950 px-5 py-16 text-white">
+  <div className="mx-auto max-w-4xl text-white/80">
+    <h2 className="text-2xl font-bold text-white">
+      Handyman Services in {city}, FL
+    </h2>
+
+    <p className="mt-4">
+      Looking for a reliable handyman in {city}, Florida? We provide
+      professional home repair and installation services throughout the Tampa Bay Area.
+      Whether you need help with drywall, painting, door repair, flooring, or general
+      handyman work — we deliver clean, high-quality results with fast response times.
+    </p>
+
+    <p className="mt-4">
+      Our services in {city}, FL include interior painting, TV mounting,
+      furniture assembly, plumbing repairs, fence repair, and more. Every project
+      is completed with attention to detail and transparent pricing — no hourly surprises.
+    </p>
+
+    <p className="mt-4">
+      We proudly serve homeowners in {city} and nearby areas. Contact us today
+      for a free estimate and get your project done right the first time.
+    </p>
+  </div>
+</section>
+
       <div className="fixed bottom-0 left-0 right-0 z-50 grid grid-cols-2 gap-2 border-t border-white/10 bg-neutral-950 p-3 md:hidden">
         <a
           href={`tel:${business.phone}`}
