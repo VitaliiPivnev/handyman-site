@@ -77,7 +77,7 @@ export async function generateMetadata({
       : city.charAt(0).toUpperCase() + city.slice(1);
 
   return {
-    title: `Handyman in ${cityFormatted}, FL | Fixora`,
+    title: `Handyman in ${cityFormatted}, FL | Handyman Tampa`,
     description: `Reliable handyman services in ${cityFormatted}, FL. Doors, drywall, painting, flooring and more. Call for a free estimate.`,
   };
 }
@@ -93,19 +93,38 @@ export default async function CityPage({
   return (
     <main className="min-h-screen bg-neutral-950 text-white">
       <header className="sticky top-0 z-50 border-b border-white/10 bg-neutral-950/90 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
-          <a href="/" className="text-xl font-bold tracking-tight">
-            {business.name}
-          </a>
+  <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
+    <a href="/" className="flex items-center gap-3 hover:opacity-90 transition">
+      <img
+        src="/logo.png"
+        alt="Tampa Handyman"
+        className="h-9 w-auto object-contain"
+      />
+      <span className="text-lg md:text-xl font-extrabold tracking-wide text-white">
+        {business.name}
+      </span>
+    </a>
 
-          <a
-            href={`tel:${business.phone}`}
-            className="rounded-full bg-yellow-400 px-4 py-2 text-sm font-semibold text-black"
-          >
-            Call Now
-          </a>
-        </div>
-      </header>
+    <nav className="hidden gap-6 text-sm text-white/80 md:flex">
+      <a href="/#services" className="hover:text-white transition">
+        Services
+      </a>
+      <a href="/#areas" className="hover:text-white transition">
+        Areas
+      </a>
+      <a href="/#contact" className="hover:text-white transition">
+        Contact
+      </a>
+    </nav>
+
+    <a
+      href={`tel:${business.phone}`}
+      className="rounded-full bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-300 transition"
+    >
+      Call Now
+    </a>
+  </div>
+</header>
 
       <section className="mx-auto max-w-7xl px-5 py-16 md:py-24">
         <p className="mb-4 inline-flex rounded-full border border-yellow-400/40 px-4 py-2 text-sm text-yellow-300">

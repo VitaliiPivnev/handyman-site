@@ -7,31 +7,36 @@ const services = [
     title: "Door Repair & Installation",
     slug: "door-repair",
     image: "/services/door-repair.png",
-    description: "Expert door repair and installation in Tampa. Interior and exterior doors fixed and installed.",
+    description:
+      "Expert door repair and installation in Tampa. Interior and exterior doors fixed and installed.",
   },
   {
     title: "Interior Painting",
     slug: "interior-painting",
     image: "/services/painting.png",
-    description: "Professional interior painting in Tampa Bay. Clean finishes for walls, ceilings, and trim.",
+    description:
+      "Professional interior painting in Tampa Bay. Clean finishes for walls, ceilings, and trim.",
   },
   {
     title: "Drywall Repair",
     slug: "drywall-repair",
     image: "/services/drywall.png",
-    description: "Drywall repair in Tampa. Fix holes, cracks, and texture matching.",
+    description:
+      "Drywall repair in Tampa. Fix holes, cracks, and texture matching.",
   },
   {
     title: "Flooring Installation",
     slug: "flooring-installation",
     image: "/services/flooring.png",
-    description: "Laminate and vinyl flooring installation. Durable and clean results.",
+    description:
+      "Laminate and vinyl flooring installation. Durable and clean results.",
   },
   {
     title: "TV Mounting",
     slug: "tv-mounting",
     image: "/services/tv-mounting.png",
-    description: "Secure TV mounting with hidden wires. Clean professional setup.",
+    description:
+      "Secure TV mounting with hidden wires. Clean professional setup.",
   },
   {
     title: "Furniture Assembly",
@@ -49,13 +54,15 @@ const services = [
     title: "Fence Repair",
     slug: "fence-repair",
     image: "/services/fence.png",
-    description: "Fence repair and installation. Wood fence fixing and replacement.",
+    description:
+      "Fence repair and installation. Wood fence fixing and replacement.",
   },
   {
     title: "General Handyman Services",
     slug: "general-handyman-services",
     image: "/services/general.png",
-    description: "Complete handyman services for any home repair or installation.",
+    description:
+      "Complete handyman services for any home repair or installation.",
   },
 ];
 
@@ -74,23 +81,43 @@ export default function Home() {
     <main className="min-h-screen bg-neutral-950 text-white">
       {/* HEADER */}
       <header className="sticky top-0 z-50 border-b border-white/10 bg-neutral-950/90 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
-          <div className="text-xl font-bold tracking-tight">{business.name}</div>
+  <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
 
-          <nav className="hidden gap-6 text-sm text-white/80 md:flex">
-            <a href="#services" className="hover:text-white">Services</a>
-            <a href="#areas" className="hover:text-white">Areas</a>
-            <a href="#contact" className="hover:text-white">Contact</a>
-          </nav>
+    {/* LOGO */}
+    <a href="/" className="flex items-center gap-3 hover:opacity-90 transition">
+      <img
+        src="/logo.png"
+        alt="Tampa Handyman"
+        className="h-9 w-auto object-contain"
+      />
+      <span className="text-lg md:text-xl font-extrabold tracking-wide text-white">
+        {business.name}
+      </span>
+    </a>
 
-          <a
-            href={`tel:${business.phone}`}
-            className="rounded-full bg-yellow-400 px-4 py-2 text-sm font-semibold text-black"
-          >
-            Call Now
-          </a>
-        </div>
-      </header>
+    {/* NAV */}
+    <nav className="hidden gap-6 text-sm text-white/80 md:flex">
+      <a href="#services" className="hover:text-white transition">
+        Services
+      </a>
+      <a href="#areas" className="hover:text-white transition">
+        Areas
+      </a>
+      <a href="#contact" className="hover:text-white transition">
+        Contact
+      </a>
+    </nav>
+
+    {/* CALL BUTTON */}
+    <a
+      href={`tel:${business.phone}`}
+      className="rounded-full bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-300 transition"
+    >
+      Call Now
+    </a>
+
+  </div>
+</header>
 
       {/* HERO */}
       <section className="mx-auto grid max-w-7xl gap-10 px-5 py-16 md:grid-cols-2 md:items-center md:py-24">
@@ -107,8 +134,9 @@ export default function Home() {
           </p>
 
           <p className="mt-5 max-w-xl text-lg leading-8 text-white/75">
-            Professional home repairs, installations, painting, drywall, flooring,
-            and general handyman work with clean results and clear communication.
+            Professional home repairs, installations, painting, drywall,
+            flooring, and general handyman work with clean results and clear
+            communication.
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -127,7 +155,7 @@ export default function Home() {
             </a>
           </div>
           <p className="mt-3 text-sm text-white/60">
-          Usually responds within 9 minutes
+            Usually responds within 9 minutes
           </p>
           <div className="mt-8 grid grid-cols-3 gap-3 text-center">
             <div className="rounded-2xl bg-white/10 p-4">
@@ -170,47 +198,49 @@ export default function Home() {
       </section>
 
       {/* SERVICES */}
-<section id="services" className="bg-white px-5 py-16 text-black">
-  <div className="mx-auto max-w-7xl">
-    <p className="text-center font-semibold text-yellow-600">What we do</p>
+      <section id="services" className="bg-white px-5 py-16 text-black">
+        <div className="mx-auto max-w-7xl">
+          <p className="text-center font-semibold text-yellow-600">
+            What we do
+          </p>
 
-    <h2 className="mt-2 text-center text-3xl font-extrabold md:text-5xl">
-      Handyman Services
-    </h2>
+          <h2 className="mt-2 text-center text-3xl font-extrabold md:text-5xl">
+            Handyman Services
+          </h2>
 
-    <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {services.map((service) => (
-        <a
-  key={service.title}
-  href={`/services/${service.slug}`}
-  className="group relative h-[320px] overflow-hidden rounded-2xl shadow-lg"
->
-  <img
-    src={service.image}
-    alt={service.title}
-    className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-  />
+          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {services.map((service) => (
+              <a
+                key={service.title}
+                href={`/services/${service.slug}`}
+                className="group relative h-[320px] overflow-hidden rounded-2xl shadow-lg"
+              >
+                <img
+                  src={service.image}
+                  alt={service.title}
+                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                />
 
-  <div className="absolute inset-0 bg-black/35" />
+                <div className="absolute inset-0 bg-black/35" />
 
-  <div className="absolute bottom-0 p-6">
-    <h3 className="text-xl font-bold text-white">
-      {service.title}
-    </h3>
+                <div className="absolute bottom-0 p-6">
+                  <h3 className="text-xl font-bold text-white">
+                    {service.title}
+                  </h3>
 
-    <p className="mt-2 text-sm leading-6 text-white/85">
-      {service.description}
-    </p>
+                  <p className="mt-2 text-sm leading-6 text-white/85">
+                    {service.description}
+                  </p>
 
-    <p className="mt-4 text-sm font-bold text-yellow-400">
-      Learn more →
-    </p>
-  </div>
-</a>
-      ))}
-    </div>
-  </div>
-</section>
+                  <p className="mt-4 text-sm font-bold text-yellow-400">
+                    Learn more →
+                  </p>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* WHY */}
       <section className="px-5 py-16">
@@ -221,9 +251,18 @@ export default function Home() {
 
           <div className="mt-8 grid gap-4 md:grid-cols-3">
             {[
-              ["Project-Based Pricing", "No confusing hourly surprises. Clear pricing for the job."],
-              ["Clean Work", "We respect your home and leave the work area clean."],
-              ["Reliable Communication", "Fast replies, clear updates, and honest expectations."],
+              [
+                "Project-Based Pricing",
+                "No confusing hourly surprises. Clear pricing for the job.",
+              ],
+              [
+                "Clean Work",
+                "We respect your home and leave the work area clean.",
+              ],
+              [
+                "Reliable Communication",
+                "Fast replies, clear updates, and honest expectations.",
+              ],
             ].map(([title, text]) => (
               <div key={title} className="rounded-2xl bg-white/10 p-6">
                 <h3 className="text-xl font-bold">{title}</h3>
@@ -236,43 +275,44 @@ export default function Home() {
 
       {/* AREAS */}
       {/* AREAS */}
-<section id="areas" className="bg-neutral-900 px-5 py-16">
-  <div className="mx-auto max-w-7xl">
-    <h2 className="text-3xl font-extrabold md:text-5xl">
-      Choose Your Service Area
-    </h2>
+      <section id="areas" className="bg-neutral-900 px-5 py-16">
+        <div className="mx-auto max-w-7xl">
+          <h2 className="text-3xl font-extrabold md:text-5xl">
+            Choose Your Service Area
+          </h2>
 
-    <p className="mt-4 max-w-2xl text-white/65">
-      Select your city to view handyman services available in your area.
-    </p>
+          <p className="mt-4 max-w-2xl text-white/65">
+            Select your city to view handyman services available in your area.
+          </p>
 
-    <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      {locations.map((location) => (
-        <a
-          key={location.slug}
-          href={`/handyman/${location.slug}`}
-          className="rounded-2xl border border-white/10 bg-white/10 px-5 py-4 font-semibold text-white transition hover:bg-yellow-400 hover:text-black"
-        >
-          {location.name}
-        </a>
-      ))}
-    </div>
+          <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {locations.map((location) => (
+              <a
+                key={location.slug}
+                href={`/handyman/${location.slug}`}
+                className="rounded-2xl border border-white/10 bg-white/10 px-5 py-4 font-semibold text-white transition hover:bg-yellow-400 hover:text-black"
+              >
+                {location.name}
+              </a>
+            ))}
+          </div>
 
-    <div className="mt-10 overflow-hidden rounded-2xl border border-white/10">
-      <iframe
-        src="https://maps.google.com/maps?hl=en&q=Tampa Bay Area Florida&t=&z=9&ie=UTF8&iwloc=B&output=embed"
-        className="h-[400px] w-full"
-        loading="lazy"
-      ></iframe>
-    </div>
+          <div className="mt-10 overflow-hidden rounded-2xl border border-white/10">
+            <iframe
+              src="https://maps.google.com/maps?hl=en&q=Tampa Bay Area Florida&t=&z=9&ie=UTF8&iwloc=B&output=embed"
+              className="h-[400px] w-full"
+              loading="lazy"
+            ></iframe>
+          </div>
 
-    <p className="mt-6 text-sm text-white/60">
-      Serving Tampa, Clearwater, St. Petersburg, Brandon, Riverview, Wesley Chapel, Largo and nearby areas.
-    </p>
-  </div>
-</section>
-            <Reviews />
-            <EstimateForm />
+          <p className="mt-6 text-sm text-white/60">
+            Serving Tampa, Clearwater, St. Petersburg, Brandon, Riverview,
+            Wesley Chapel, Largo and nearby areas.
+          </p>
+        </div>
+      </section>
+      <Reviews />
+      <EstimateForm />
       {/* CONTACT */}
       <section id="contact" className="bg-yellow-400 px-5 py-16 text-black">
         <div className="mx-auto max-w-4xl text-center">
