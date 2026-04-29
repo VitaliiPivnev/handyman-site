@@ -25,7 +25,7 @@ export default function PrivacyPage() {
         </p>
 
         <p className="mt-4">
-          Contact: contact@your-email.com
+          Contact: pivnevbss@gmail.com
         </p>
       </div>
     </main>
