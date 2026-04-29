@@ -111,7 +111,7 @@ export default function Home() {
             </a>
 
             <a
-              href={`sms:${business.phone}`}
+              href="sms:+13054650208"
               className="rounded-xl border border-white/20 px-6 py-4 text-center text-lg font-semibold text-white"
             >
               Text for Estimate
@@ -151,7 +151,7 @@ export default function Home() {
             </div>
 
             <a
-              href={`sms:${business.phone}`}
+              href="sms:+13054650208"
               className="mt-6 block rounded-xl bg-white px-5 py-4 text-center font-bold text-black"
             >
               Send Project Details
@@ -282,7 +282,7 @@ export default function Home() {
               Call Now
             </a>
             <a
-              href={`sms:${business.phone}`}
+              href="sms:+13054650208"
               className="rounded-xl border border-black px-8 py-4 text-lg font-bold"
             >
               Text Us
@@ -300,7 +300,7 @@ export default function Home() {
           Call
         </a>
         <a
-          href={`sms:${business.phone}`}
+          href="sms:+13054650208"
           className="rounded-xl bg-white py-3 text-center font-bold text-black"
         >
           Text
