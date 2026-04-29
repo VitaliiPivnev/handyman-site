@@ -14,14 +14,54 @@ const cityNames: Record<string, string> = {
 };
 
 const services = [
-  { title: "Door Repair & Installation", image: "/services/door-repair.png", slug: "door-repair" },
-  { title: "Drywall Repair", image: "/services/drywall.png", slug: "drywall-repair" },
-  { title: "Interior Painting", image: "/services/painting.png", slug: "interior-painting" },
-  { title: "Flooring Installation", image: "/services/flooring.png", slug: "flooring-installation" },
-  { title: "TV Mounting", image: "/services/tv-mounting.png", slug: "tv-mounting" },
-  { title: "Furniture Assembly", image: "/services/furniture.png", slug: "furniture-assembly" },
-  { title: "Plumbing Repairs", image: "/services/plumbing.png", slug: "plumbing-repairs" },
-  { title: "Fence Repair", image: "/services/fence.png", slug: "fence-repair" },
+  {
+    title: "Door Repair & Installation",
+    slug: "door-repair",
+    image: "/services/door-repair.png",
+    description: "Door repair and installation for interior and exterior doors.",
+  },
+  {
+    title: "Drywall Repair",
+    slug: "drywall-repair",
+    image: "/services/drywall.png",
+    description: "Drywall repair, patching, cracks, holes, and texture matching.",
+  },
+  {
+    title: "Interior Painting",
+    slug: "interior-painting",
+    image: "/services/painting.png",
+    description: "Interior painting for walls, ceilings, trim, and touch-ups.",
+  },
+  {
+    title: "Flooring Installation",
+    slug: "flooring-installation",
+    image: "/services/flooring.png",
+    description: "Laminate, vinyl plank, and flooring installation services.",
+  },
+  {
+    title: "TV Mounting",
+    slug: "tv-mounting",
+    image: "/services/tv-mounting.png",
+    description: "Secure TV mounting with clean setup and wire management.",
+  },
+  {
+    title: "Furniture Assembly",
+    slug: "furniture-assembly",
+    image: "/services/furniture.png",
+    description: "Furniture assembly for IKEA, Amazon, cabinets, beds, and more.",
+  },
+  {
+    title: "Plumbing Repairs",
+    slug: "plumbing-repairs",
+    image: "/services/plumbing.png",
+    description: "Small plumbing repairs, faucets, leaks, toilets, and drains.",
+  },
+  {
+    title: "Fence Repair",
+    slug: "fence-repair",
+    image: "/services/fence.png",
+    description: "Fence repair, wood panels, posts, gates, and small installs.",
+  },
 ];
 
 export async function generateMetadata({
@@ -109,32 +149,32 @@ export default async function CityPage({
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {services.map((service) => (
               <a
-  key={service.slug}
-  href={`/handyman/${citySlug}/${service.slug}`}
-  className="group relative h-[320px] overflow-hidden rounded-2xl shadow-lg"
->
-  <img
-    src={service.image}
-    alt={service.title}
-    className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-  />
+                key={service.slug}
+                href={`/handyman/${citySlug}/${service.slug}`}
+                className="group relative h-[320px] overflow-hidden rounded-2xl shadow-lg"
+              >
+                <img
+                  src={service.image}
+                  alt={service.title}
+                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                />
 
-  <div className="absolute inset-0 bg-black/35 transition group-hover:bg-black/50" />
+                <div className="absolute inset-0 bg-black/35 transition group-hover:bg-black/50" />
 
-  <div className="absolute bottom-0 p-6">
-    <h3 className="text-xl font-bold text-white">
-      {service.title}
-    </h3>
+                <div className="absolute bottom-0 p-6">
+                  <h3 className="text-xl font-bold text-white">
+                    {service.title}
+                  </h3>
 
-    <p className="mt-2 text-sm leading-6 text-white/85">
-      Professional, clean, and reliable service in {city}.
-    </p>
+                  <p className="mt-2 text-sm leading-6 text-white/85">
+                    {service.description} Serving {city} and nearby areas.
+                  </p>
 
-    <p className="mt-4 text-sm font-bold text-yellow-400">
-      Learn more →
-    </p>
-  </div>
-</a>
+                  <p className="mt-4 text-sm font-bold text-yellow-400">
+                    Learn more →
+                  </p>
+                </div>
+              </a>
             ))}
           </div>
         </div>
@@ -164,7 +204,7 @@ export default async function CityPage({
           </div>
         </div>
       </section>
-            <EstimateForm />
+      <EstimateForm />
       <section className="bg-yellow-400 px-5 py-16 text-black">
         <div className="mx-auto max-w-4xl text-center">
           <h2 className="text-3xl font-extrabold md:text-5xl">

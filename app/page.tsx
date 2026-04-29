@@ -5,48 +5,57 @@ import EstimateForm from "./components/EstimateForm";
 const services = [
   {
     title: "Door Repair & Installation",
-    image: "/services/door-repair.png",
     slug: "door-repair",
+    image: "/services/door-repair.png",
+    description: "Expert door repair and installation in Tampa. Interior and exterior doors fixed and installed.",
   },
   {
     title: "Interior Painting",
-    image: "/services/painting.png",
     slug: "interior-painting",
+    image: "/services/painting.png",
+    description: "Professional interior painting in Tampa Bay. Clean finishes for walls, ceilings, and trim.",
   },
   {
     title: "Drywall Repair",
-    image: "/services/drywall.png",
     slug: "drywall-repair",
+    image: "/services/drywall.png",
+    description: "Drywall repair in Tampa. Fix holes, cracks, and texture matching.",
   },
   {
     title: "Flooring Installation",
-    image: "/services/flooring.png",
     slug: "flooring-installation",
+    image: "/services/flooring.png",
+    description: "Laminate and vinyl flooring installation. Durable and clean results.",
   },
   {
     title: "TV Mounting",
-    image: "/services/tv-mounting.png",
     slug: "tv-mounting",
+    image: "/services/tv-mounting.png",
+    description: "Secure TV mounting with hidden wires. Clean professional setup.",
   },
   {
     title: "Furniture Assembly",
-    image: "/services/furniture.png",
     slug: "furniture-assembly",
+    image: "/services/furniture.png",
+    description: "Fast and precise furniture assembly. IKEA and all brands.",
   },
   {
     title: "Plumbing Repairs",
-    image: "/services/plumbing.png",
     slug: "plumbing-repairs",
+    image: "/services/plumbing.png",
+    description: "Fix leaks, faucets, toilets, and plumbing issues quickly.",
   },
   {
     title: "Fence Repair",
-    image: "/services/fence.png",
     slug: "fence-repair",
+    image: "/services/fence.png",
+    description: "Fence repair and installation. Wood fence fixing and replacement.",
   },
   {
     title: "General Handyman Services",
-    image: "/services/general.png",
     slug: "general-handyman-services",
+    image: "/services/general.png",
+    description: "Complete handyman services for any home repair or installation.",
   },
 ];
 
@@ -190,7 +199,7 @@ export default function Home() {
     </h3>
 
     <p className="mt-2 text-sm leading-6 text-white/85">
-      Professional, clean, and reliable service for your home project.
+      {service.description}
     </p>
 
     <p className="mt-4 text-sm font-bold text-yellow-400">
