@@ -49,7 +49,7 @@ export async function generateMetadata({
   const serviceName = serviceNames[service] || service;
 
   return {
-    title: `${serviceName} in ${cityName}, FL | Fixora Handyman`,
+    title: `${serviceName} in ${cityName}, FL | Handyman Tampa`,
     description: `Professional ${serviceName.toLowerCase()} in ${cityName}, FL. Fast response, clean work, and free estimates in the Tampa Bay Area.`,
   };
 }

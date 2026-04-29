@@ -11,7 +11,7 @@ export async function generateMetadata({
   const name = service.replace(/-/g, " ");
 
   return {
-    title: `${name} Services | Fixora Handyman`,
+    title: `${name} Services | Handyman Tampa`,
     description: `Professional ${name} services in Tampa Bay Area. Fast, clean, and reliable work. Call today.`,
   };
 }
@@ -42,7 +42,16 @@ export default async function ServicePage({
       {/* HEADER */}
       <header className="sticky top-0 z-50 border-b border-white/10 bg-neutral-950/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
-          <a href="/" className="text-xl font-bold">{business.name}</a>
+          <a href="/" className="flex items-center gap-2">
+  <img
+    src="/logo.png"
+    alt="Tampa Handyman"
+    className="h-8 w-auto"
+  />
+  <span className="text-xl font-bold text-white">
+    Tampa Handyman
+  </span>
+</a>
 
           <a
             href={`tel:${business.phone}`}
