@@ -23,6 +23,13 @@ export default function ThanksPage() {
           </a>
 
           <a
+            href="sms:+13054650208"
+            className="rounded-xl border border-white/20 px-6 py-4 font-bold text-white"
+          >
+            Text Us
+          </a>
+
+          <a
             href="/"
             className="rounded-xl border border-white/20 px-6 py-4 font-bold text-white"
           >
