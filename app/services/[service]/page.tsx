@@ -73,7 +73,7 @@ export default async function ServicePage({
           </a>
 
           <a
-            href={`sms:${business.phone}`}
+            href="sms:+13054650208"
             className="border border-white/20 px-6 py-4 rounded-xl"
           >
             Text for Estimate
@@ -112,7 +112,7 @@ export default async function ServicePage({
           Call
         </a>
         <a
-          href={`sms:${business.phone}`}
+          href="sms:+13054650208"
           className="bg-white text-black py-3 text-center font-bold rounded-xl"
         >
           Text

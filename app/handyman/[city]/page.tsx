@@ -91,7 +91,7 @@ export default async function CityPage({
           </a>
 
           <a
-            href={`sms:${business.phone}`}
+            href="sms:+13054650208"
             className="rounded-xl border border-white/20 px-6 py-4 text-center text-lg font-semibold text-white"
           >
             Text for Estimate
@@ -182,7 +182,7 @@ export default async function CityPage({
               Call Now
             </a>
             <a
-              href={`sms:${business.phone}`}
+              href="sms:+13054650208"
               className="rounded-xl border border-black px-8 py-4 text-lg font-bold"
             >
               Text Us
@@ -199,7 +199,7 @@ export default async function CityPage({
           Call
         </a>
         <a
-          href={`sms:${business.phone}`}
+          href="sms:+13054650208"
           className="rounded-xl bg-white py-3 text-center font-bold text-black"
         >
           Text
