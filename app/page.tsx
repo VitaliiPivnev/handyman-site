@@ -55,7 +55,7 @@ export default function Home() {
           </p>
 
           <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-            Reliable Handyman <br /> in Tampa Bay Area
+            Reliable Handyman <br /> in {business.city}
           </h1>
           <p className="mt-4 text-lg text-white/70">
             Same-day service • Free estimates • 5-star rated
