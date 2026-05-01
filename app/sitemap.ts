@@ -1,31 +1,7 @@
 import type { MetadataRoute } from "next";
+import { baseUrl, cities, services } from "./data/site";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://handymantampa.net";
-
-  const cityPages = [
-    "tampa",
-    "clearwater",
-    "st-petersburg",
-    "brandon",
-    "riverview",
-    "wesley-chapel",
-    "lutz",
-    "carrollwood",
-    "westchase",
-  ];
-
-  const servicePages = [
-    "door-repair",
-    "drywall-repair",
-    "interior-painting",
-    "flooring-installation",
-    "tv-mounting",
-    "furniture-assembly",
-    "plumbing-repairs",
-    "fence-repair",
-  ];
-
   return [
     {
       url: baseUrl,
@@ -33,17 +9,25 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 1,
     },
-    ...cityPages.map((city) => ({
-      url: `${baseUrl}/handyman/${city}`,
+    ...cities.map((city) => ({
+      url: `${baseUrl}/handyman/${city.slug}`,
       lastModified: new Date(),
       changeFrequency: "weekly" as const,
       priority: 0.9,
     })),
-    ...servicePages.map((service) => ({
-      url: `${baseUrl}/services/${service}`,
+    ...services.map((service) => ({
+      url: `${baseUrl}/services/${service.slug}`,
       lastModified: new Date(),
       changeFrequency: "weekly" as const,
       priority: 0.8,
     })),
+    ...cities.flatMap((city) =>
+      services.map((service) => ({
+        url: `${baseUrl}/handyman/${city.slug}/${service.slug}`,
+        lastModified: new Date(),
+        changeFrequency: "weekly" as const,
+        priority: 0.85,
+      }))
+    ),
   ];
 }

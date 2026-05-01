@@ -2,79 +2,7 @@ import Reviews from "./components/Reviews";
 import { business } from "./data/business";
 import EstimateForm from "./components/EstimateForm";
 
-const services = [
-  {
-    title: "Door Repair & Installation",
-    slug: "door-repair",
-    image: "/services/door-repair.png",
-    description:
-      "Expert door repair and installation in Tampa. Interior and exterior doors fixed and installed.",
-  },
-  {
-    title: "Interior Painting",
-    slug: "interior-painting",
-    image: "/services/painting.png",
-    description:
-      "Professional interior painting in Tampa Bay. Clean finishes for walls, ceilings, and trim.",
-  },
-  {
-    title: "Drywall Repair",
-    slug: "drywall-repair",
-    image: "/services/drywall.png",
-    description:
-      "Drywall repair in Tampa. Fix holes, cracks, and texture matching.",
-  },
-  {
-    title: "Flooring Installation",
-    slug: "flooring-installation",
-    image: "/services/flooring.png",
-    description:
-      "Laminate and vinyl flooring installation. Durable and clean results.",
-  },
-  {
-    title: "TV Mounting",
-    slug: "tv-mounting",
-    image: "/services/tv-mounting.png",
-    description:
-      "Secure TV mounting with hidden wires. Clean professional setup.",
-  },
-  {
-    title: "Furniture Assembly",
-    slug: "furniture-assembly",
-    image: "/services/furniture.png",
-    description: "Fast and precise furniture assembly. IKEA and all brands.",
-  },
-  {
-    title: "Plumbing Repairs",
-    slug: "plumbing-repairs",
-    image: "/services/plumbing.png",
-    description: "Fix leaks, faucets, toilets, and plumbing issues quickly.",
-  },
-  {
-    title: "Fence Repair",
-    slug: "fence-repair",
-    image: "/services/fence.png",
-    description:
-      "Fence repair and installation. Wood fence fixing and replacement.",
-  },
-  {
-    title: "General Handyman Services",
-    slug: "general-handyman-services",
-    image: "/services/general.png",
-    description:
-      "Complete handyman services for any home repair or installation.",
-  },
-];
-
-const locations = [
-  { name: "Tampa", slug: "tampa" },
-  { name: "Clearwater", slug: "clearwater" },
-  { name: "St. Petersburg", slug: "st-petersburg" },
-  { name: "Brandon", slug: "brandon" },
-  { name: "Riverview", slug: "riverview" },
-  { name: "Wesley Chapel", slug: "wesley-chapel" },
-  { name: "Largo", slug: "largo" },
-];
+import { cities, services } from "./data/site";
 
 export default function Home() {
   return (
@@ -286,7 +214,7 @@ export default function Home() {
           </p>
 
           <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {locations.map((location) => (
+            {cities.map((location) => (
               <a
                 key={location.slug}
                 href={`/handyman/${location.slug}`}
