@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:estimate": "node --experimental-strip-types --test tests/estimate-route.test.mts"
+    "test:estimate": "node --experimental-strip-types --test tests/estimate-route.test.mts",
+    "test:seo": "node --experimental-strip-types --test tests/seo-indexability.test.mts"
   },
   "dependencies": {
     "next": "^16.4.6",
