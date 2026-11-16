@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getClientIp, withinRateLimit } from "./rate-limit";
+import { claimSubmission, isValidSubmissionId, markSubmissionDelivered, releaseSubmission } from "./idempotency";
 
 export const runtime = "nodejs";
 
@@ -69,10 +70,12 @@ async function telegram(endpoint: string, body: BodyInit, headers?: HeadersInit)
   const response = await fetch(`https://api.telegram.org/bot${token}/${endpoint}`, {
     method: "POST", body, headers, cache: "no-store", signal: AbortSignal.timeout(15000),
   });
-  if (!response.ok) throw new Error(`Telegram ${endpoint} failed with status ${response.status}`);
+  if (!response.ok) throw new ConfirmedTelegramFailure(`Telegram ${endpoint} failed with status ${response.status}`);
   const result: { ok?: boolean } = await response.json();
-  if (result.ok !== true) throw new Error(`Telegram ${endpoint} rejected request`);
+  if (result.ok !== true) throw new ConfirmedTelegramFailure(`Telegram ${endpoint} rejected request`);
 }
+
+class ConfirmedTelegramFailure extends Error {}
 
 export async function POST(request: Request) {
   try {
@@ -90,6 +93,7 @@ export async function POST(request: Request) {
     const email = asText(form, "email", 160);
     const location = asText(form, "location", 90);
     const message = asText(form, "message", 3000);
+    const submissionId = asText(form, "submission_id", 64);
     const source = asText(form, "utm_source", 120) || "";
     const medium = asText(form, "utm_medium", 120) || "";
     const campaign = asText(form, "utm_campaign", 120) || "";
@@ -97,6 +101,9 @@ export async function POST(request: Request) {
     const referrer = asText(form, "referrer_host", 120) || "";
     if (!name || name.length < 2 || !phone || !message || message.length < 10 || email === null || location === null) {
       return formError("Please enter your name, phone number, and project details.");
+    }
+    if (!submissionId || !isValidSubmissionId(submissionId)) {
+      return formError("This form session is invalid. Please refresh the page and try again.");
     }
     const digits = phone.replace(/\D/g, "");
     if (digits.length < 10 || digits.length > 15) return formError("Please enter a valid phone number.");
@@ -131,23 +138,42 @@ export async function POST(request: Request) {
       console.error("Production lead delivery mode is not configured");
       return formError("The form is temporarily unavailable. Please call or text us instead.", 503);
     }
-    if (deliveryMode === "test") {
-      return NextResponse.redirect(new URL(`/thanks?lead=${crypto.randomUUID()}&test=1`, request.url), 303);
-    }
-    if (deliveryMode !== "telegram") {
+    if (deliveryMode !== "telegram" && deliveryMode !== "test") {
       console.error("Unknown lead delivery mode");
       return formError("The form is temporarily unavailable. Please call or text us instead.", 503);
     }
-    if (!isProduction && process.env.ALLOW_PREVIEW_TELEGRAM_DELIVERY !== "true") {
+    if (deliveryMode === "telegram" && !isProduction && process.env.ALLOW_PREVIEW_TELEGRAM_DELIVERY !== "true") {
       console.error("Preview Telegram delivery is not explicitly allowed");
       return formError("Preview delivery is disabled. Use test mode or a dedicated test Telegram destination.", 503);
     }
 
     const chatId = process.env.TELEGRAM_CHAT_ID;
-    if (!chatId || !process.env.TELEGRAM_BOT_TOKEN) {
+    if (deliveryMode === "telegram" && (!chatId || !process.env.TELEGRAM_BOT_TOKEN)) {
       console.error("Lead destination not configured");
       return formError("The form is temporarily unavailable. Please call or text us instead.", 503);
     }
+
+    const submission = await claimSubmission(submissionId);
+    if (submission.status === "unavailable") {
+      console.error("Estimate idempotency unavailable", { reason: submission.reason });
+      return formError("The form is temporarily unavailable. Please call or text us instead.", 503);
+    }
+    if (submission.status === "processing") {
+      return formError("This request is already being processed. Please wait before trying again.", 409);
+    }
+    if (submission.status === "delivered") {
+      const testQuery = deliveryMode === "test" ? "&test=1" : "";
+      return NextResponse.redirect(new URL(`/thanks?lead=${submissionId}${testQuery}`, request.url), 303);
+    }
+    if (deliveryMode === "test") {
+      if (!(await markSubmissionDelivered(submissionId, submission.lockValue))) {
+        console.error("Unable to finalize test submission idempotency");
+        await releaseSubmission(submissionId, submission.lockValue);
+        return formError("The form is temporarily unavailable. Please call or text us instead.", 503);
+      }
+      return NextResponse.redirect(new URL(`/thanks?lead=${submissionId}&test=1`, request.url), 303);
+    }
+
     const bodyText = [
       "🛠 New Handyman Website Lead",
       `Name: ${name}`,
@@ -161,14 +187,30 @@ export async function POST(request: Request) {
       `Referrer: ${referrer || "none"}`,
     ].join("\n");
 
-    await telegram("sendMessage", JSON.stringify({ chat_id: chatId, text: bodyText }), { "Content-Type": "application/json" });
+    try {
+      await telegram("sendMessage", JSON.stringify({ chat_id: chatId!, text: bodyText }), { "Content-Type": "application/json" });
+    } catch (error) {
+      // A definite API rejection is safe to retry. A timeout or network error
+      // is ambiguous: Telegram may have accepted the message, so retain the
+      // processing lock rather than risk sending the same lead twice.
+      if (error instanceof ConfirmedTelegramFailure) {
+        await releaseSubmission(submissionId, submission.lockValue);
+      }
+      throw error;
+    }
+
+    if (!(await markSubmissionDelivered(submissionId, submission.lockValue))) {
+      // The Telegram text is already confirmed. Keep the processing lock so a
+      // retry cannot send a duplicate, and return success to the customer.
+      console.error("Telegram delivered but submission idempotency finalization failed");
+    }
 
     // The text lead is now safely delivered; do not lose it if a photo fails.
     for (const [index, originalFile] of files.entries()) {
       try {
         const file = safeUpload(originalFile, index);
         const photoData = new FormData();
-        photoData.set("chat_id", chatId);
+        photoData.set("chat_id", chatId!);
         const isPhoto = file.type === "image/jpeg" || file.type === "image/png";
         photoData.set(isPhoto ? "photo" : "document", file);
         await telegram(isPhoto ? "sendPhoto" : "sendDocument", photoData);
@@ -176,7 +218,7 @@ export async function POST(request: Request) {
         console.error("Failed to forward an attached photo", error);
       }
     }
-    return NextResponse.redirect(new URL(`/thanks?lead=${crypto.randomUUID()}`, request.url), 303);
+    return NextResponse.redirect(new URL(`/thanks?lead=${submissionId}`, request.url), 303);
   } catch (error) {
     console.error("Unable to deliver website estimate", error);
     return formError("There was a problem sending your request. Please call or text us instead.", 500);

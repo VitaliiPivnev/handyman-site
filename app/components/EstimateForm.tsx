@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import Script from "next/script";
 import LeadAttributionFields from "./LeadAttributionFields";
 
@@ -8,6 +8,7 @@ import LeadAttributionFields from "./LeadAttributionFields";
 // locally before submitting; never upload originals through the API route.
 const MAX_PHOTOS = 3;
 const MAX_IMAGE_BYTES = 950_000;
+const CLEAR_AFTER_SUCCESS_KEY = "handyman_estimate_clear_after_success";
 
 async function compressImage(file: File): Promise<File> {
   const objectUrl = URL.createObjectURL(file);
@@ -42,12 +43,53 @@ async function compressImage(file: File): Promise<File> {
 export default function EstimateForm() {
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
   const formStarted = useRef(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const submittingRef = useRef(false);
+  const submissionId = useRef("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  const resetTurnstile = useCallback(() => {
+    window.turnstile?.reset();
+  }, []);
+
+  const clearEstimateForm = useCallback(() => {
+    const form = formRef.current;
+    if (!form) return;
+    form.reset();
+    for (const name of ["name", "phone", "email", "location", "message"]) {
+      const field = form.elements.namedItem(name);
+      if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement) field.value = "";
+    }
+    const photos = form.elements.namedItem("attachment");
+    if (photos instanceof HTMLInputElement) photos.value = "";
+    submissionId.current = "";
+    setError("");
+    resetTurnstile();
+  }, [resetTurnstile]);
+
+  useEffect(() => {
+    function clearAfterSuccessfulRestore() {
+      try {
+        if (sessionStorage.getItem(CLEAR_AFTER_SUCCESS_KEY) !== "1") return;
+        const clear = () => clearEstimateForm();
+        clear();
+        requestAnimationFrame(clear);
+        window.setTimeout(clear, 100);
+        sessionStorage.removeItem(CLEAR_AFTER_SUCCESS_KEY);
+      } catch { /* sessionStorage may be blocked; form was already reset before navigation */ }
+    }
+    function handlePageShow() {
+      clearAfterSuccessfulRestore();
+    }
+    clearAfterSuccessfulRestore();
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
+  }, [clearEstimateForm]);
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submitting) return;
+    if (submittingRef.current) return;
     setError("");
     const formElement = event.currentTarget;
     const filesInput = formElement.elements.namedItem("attachment") as HTMLInputElement | null;
@@ -57,16 +99,21 @@ export default function EstimateForm() {
       return;
     }
 
+    submittingRef.current = true;
     setSubmitting(true);
     try {
       const form = new FormData(formElement);
       form.delete("attachment");
+      if (!submissionId.current) submissionId.current = crypto.randomUUID();
+      form.set("submission_id", submissionId.current);
       for (const file of files) {
         const optimized = await compressImage(file);
         form.append("attachment", optimized);
       }
       const response = await fetch("/api/estimate", { method: "POST", body: form, redirect: "follow" });
       if (response.ok && response.redirected && new URL(response.url).pathname === "/thanks") {
+        try { sessionStorage.setItem(CLEAR_AFTER_SUCCESS_KEY, "1"); } catch { /* best effort */ }
+        clearEstimateForm();
         window.location.assign(response.url);
         return;
       }
@@ -74,10 +121,12 @@ export default function EstimateForm() {
       const doc = new DOMParser().parseFromString(text, "text/html");
       const message = doc.querySelector("main p")?.textContent;
       setError(message || "Could not send the request. Please call or text us instead.");
-      window.turnstile?.reset();
+      resetTurnstile();
     } catch {
+      resetTurnstile();
       setError("We couldn't process your photos or send this form. Please try again without photos, or text us your project details.");
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   }
@@ -91,7 +140,7 @@ export default function EstimateForm() {
           A short description and a few photos help us give you accurate project-based pricing.
           Materials, when needed, are quoted separately.
         </p>
-        <form action="/api/estimate" method="POST" encType="multipart/form-data" onSubmit={handleSubmit}
+        <form ref={formRef} action="/api/estimate" method="POST" encType="multipart/form-data" onSubmit={handleSubmit}
           onFocus={() => {
             if (formStarted.current) return;
             formStarted.current = true;
