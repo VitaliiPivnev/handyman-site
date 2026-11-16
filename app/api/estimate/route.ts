@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getClientIp, withinRateLimit } from "./rate-limit";
 import { claimSubmission, isValidSubmissionId, markSubmissionDelivered, releaseSubmission } from "./idempotency";
+import { assessEstimateSpam } from "./spam";
 
 export const runtime = "nodejs";
 
@@ -132,6 +133,20 @@ export async function POST(request: Request) {
       return formError("The form is temporarily unavailable. Please call or text us instead.", 503);
     }
 
+    const spam = await assessEstimateSpam({ name, email, location, message });
+    if (spam.action !== "allow" || spam.fingerprintStatus === "unavailable") {
+      console.warn("Estimate spam assessment", {
+        action: spam.action,
+        score: spam.score,
+        reasons: spam.reasons,
+        repeatCount: spam.repeatCount,
+        fingerprintStatus: spam.fingerprintStatus,
+      });
+    }
+    if (spam.action === "block") {
+      return formError("Your request could not be accepted. Please describe the handyman work you need and remove promotional or unrelated content.", 422);
+    }
+
     const isProduction = process.env.VERCEL_ENV === "production";
     const deliveryMode = process.env.LEAD_DELIVERY_MODE || (isProduction ? "telegram" : "test");
     if (isProduction && deliveryMode !== "telegram") {
@@ -175,7 +190,8 @@ export async function POST(request: Request) {
     }
 
     const bodyText = [
-      "🛠 New Handyman Website Lead",
+      spam.action === "review" ? "⚠️ REVIEW — Possible Promotional Lead" : "🛠 New Handyman Website Lead",
+      ...(spam.action === "review" ? [`Risk signals: ${spam.reasons.join(", ") || "context review"}`] : []),
       `Name: ${name}`,
       `Phone: ${phone}`,
       `Email: ${email || "Not provided"}`,
