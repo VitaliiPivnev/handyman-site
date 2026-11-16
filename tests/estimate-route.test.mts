@@ -9,6 +9,7 @@ import {
   releaseSubmission,
 } from "../app/api/estimate/idempotency.ts";
 import { assessEstimateSpam, scoreEstimateSpam, spamThresholds } from "../app/api/estimate/spam.ts";
+import { isConfirmedNewLeadRedirect } from "../app/components/lead-analytics.ts";
 
 const originalFetch = globalThis.fetch;
 const envNames = [
@@ -210,6 +211,57 @@ test("client retains entered data on failed submission and only resets Turnstile
   assert.match(failurePath, /setError\(/);
   assert.match(failurePath, /resetTurnstile\(\)/);
   assert.doesNotMatch(failurePath, /clearEstimateForm\(\)/);
+});
+
+test("GA4 generate_lead fires only for a newly delivered production lead", async () => {
+  const [formSource, analyticsSource, routeSource, thanksSource] = await Promise.all([
+    readFile(new URL("../app/components/EstimateForm.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/components/lead-analytics.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/estimate/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/thanks/page.tsx", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(formSource, /isConfirmedNewLeadRedirect\(response\.url\)/);
+  assert.match(formSource, /await trackConfirmedLead\(\)/);
+  assert.match(analyticsSource, /window\.gtag\("event", "generate_lead"/);
+  assert.match(analyticsSource, /method: "website_form"/);
+  assert.match(analyticsSource, /transport_type: "beacon"/);
+  assert.match(analyticsSource, /event_callback: finish/);
+  assert.match(analyticsSource, /LEAD_EVENT_TIMEOUT_MS = 300/);
+  assert.doesNotMatch(analyticsSource, /customer_name|phone_number|email_address|lead_message|attachment|project_location/);
+
+  assert.equal(isConfirmedNewLeadRedirect("https://handymantampa.net/thanks?lead=abc&conversion=1"), true);
+  assert.equal(isConfirmedNewLeadRedirect("https://handymantampa.net/thanks?lead=abc"), false);
+  assert.equal(isConfirmedNewLeadRedirect("https://handymantampa.net/thanks?lead=abc&conversion=1&test=1"), false);
+  assert.equal(isConfirmedNewLeadRedirect("https://handymantampa.net/"), false);
+  assert.equal(isConfirmedNewLeadRedirect("not-a-url"), false);
+
+  const duplicateStart = routeSource.indexOf('if (submission.status === "delivered")');
+  const duplicateEnd = routeSource.indexOf('if (deliveryMode === "test")', duplicateStart);
+  assert.doesNotMatch(routeSource.slice(duplicateStart, duplicateEnd), /conversion=1/);
+
+  const testStart = routeSource.indexOf('if (deliveryMode === "test")');
+  const telegramStart = routeSource.indexOf("const bodyText", testStart);
+  assert.doesNotMatch(routeSource.slice(testStart, telegramStart), /conversion=1/);
+  assert.match(routeSource.slice(telegramStart), /thanks\?lead=\$\{submissionId\}&conversion=1/);
+  assert.doesNotMatch(thanksSource, /generate_lead|LeadConversion/);
+});
+
+test("existing interaction analytics use one event per user action and retain UTM fields", async () => {
+  const [trackingSource, formSource, attributionSource] = await Promise.all([
+    readFile(new URL("../app/components/TrackingLink.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/components/EstimateForm.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/components/LeadAttributionFields.tsx", import.meta.url), "utf8"),
+  ]);
+  assert.match(trackingSource, /window\.gtag\?\.\("event", eventName/);
+  assert.equal((trackingSource.match(/window\.gtag\?\.\("event"/g) || []).length, 1);
+  assert.match(trackingSource, /"click_to_call" \| "click_to_text"/);
+  assert.match(formSource, /if \(formStarted\.current\) return/);
+  assert.equal((formSource.match(/"form_started"/g) || []).length, 1);
+  for (const field of ["utm_source", "utm_medium", "utm_campaign", "landing_page", "referrer_host"]) {
+    assert.match(attributionSource, new RegExp(field));
+  }
+  assert.match(attributionSource, /handyman_first_touch/);
 });
 
 test("server claims before Telegram and only releases a confirmed delivery failure", async () => {

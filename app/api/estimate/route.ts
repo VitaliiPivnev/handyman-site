@@ -234,7 +234,7 @@ export async function POST(request: Request) {
         console.error("Failed to forward an attached photo", error);
       }
     }
-    return NextResponse.redirect(new URL(`/thanks?lead=${submissionId}`, request.url), 303);
+    return NextResponse.redirect(new URL(`/thanks?lead=${submissionId}&conversion=1`, request.url), 303);
   } catch (error) {
     console.error("Unable to deliver website estimate", error);
     return formError("There was a problem sending your request. Please call or text us instead.", 500);
