@@ -1,11 +1,11 @@
 import StickyBar from "./components/StickyBar";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
@@ -35,25 +35,35 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const configuredGaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "";
+  const gaMeasurementId = /^G-[A-Z0-9]+$/.test(configuredGaId) ? configuredGaId : "";
+  const analyticsEnabled = Boolean(
+    gaMeasurementId &&
+    (process.env.VERCEL_ENV === "production" || process.env.ENABLE_PREVIEW_ANALYTICS === "true")
+  );
+
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-64YH9J4EJ6"
-          strategy="afterInteractive"
-        />
-
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-64YH9J4EJ6');
-          `}
-        </Script>
+        {analyticsEnabled && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${gaMeasurementId}', { allow_google_signals: false });
+              `}
+            </Script>
+          </>
+        )}
 
         {children}
 

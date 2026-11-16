@@ -1,3 +1,6 @@
+import Link from "next/link";
+import Image from "next/image";
+import { notFound } from "next/navigation";
 import { business } from "../../../data/business";
 import {
   cities,
@@ -24,12 +27,15 @@ export async function generateMetadata({
 }) {
   const { city, service } = await params;
 
+  if (!cities.some((item) => item.slug === city) || !getService(service)) notFound();
+
   const cityName = getCityName(city);
   const serviceName = getServiceName(service);
 
   return {
     title: `${serviceName} in ${cityName}, FL | Handyman Tampa`,
     description: `Professional ${serviceName.toLowerCase()} in ${cityName}, FL. Fast response, clean work, and free estimates in the Tampa Bay Area.`,
+    alternates: { canonical: `/handyman/${city}/${service}` },
   };
 }
 
@@ -43,6 +49,7 @@ export default async function Page({
   const cityName = getCityName(city);
   const serviceName = getServiceName(service);
   const serviceData = getService(service);
+  if (!cities.some((item) => item.slug === city) || !serviceData) notFound();
   const includes = serviceData?.includes || [
     "Home repair and installation",
     "Clean and professional work",
@@ -54,12 +61,12 @@ export default async function Page({
     <main className="min-h-screen bg-neutral-950 text-white">
       <header className="sticky top-0 z-50 border-b border-white/10 bg-neutral-950/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
-          <a href="/" className="flex items-center gap-3 hover:opacity-90 transition">
-            <img src="/logo.png" alt="Tampa Handyman" className="h-9 w-auto object-contain" />
+          <Link href="/" className="flex items-center gap-3 hover:opacity-90 transition">
+            <Image src="/logo.png" alt="Tampa Handyman" width={54} height={36} className="h-9 w-auto object-contain" />
             <span className="text-lg md:text-xl font-extrabold tracking-wide text-white">
               Handyman Tampa
             </span>
-          </a>
+          </Link>
 
           <a
             href={`tel:${business.phone}`}

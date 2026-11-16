@@ -1,288 +1,227 @@
-import Reviews from "./components/Reviews";
+import Link from "next/link";
+import Image from "next/image";
+import type { Metadata } from "next";
 import { business } from "./data/business";
-import EstimateForm from "./components/EstimateForm";
-
 import { cities, services } from "./data/site";
+import { projects } from "./data/projects";
+import Portfolio from "./components/Portfolio";
+import Reviews from "./components/Reviews";
+import EstimateForm from "./components/EstimateForm";
+import TrackingLink from "./components/TrackingLink";
+import BusinessJsonLd from "./components/BusinessJsonLd";
+
+export const metadata: Metadata = {
+  title: "Handyman in Tampa Bay, FL | Doors, Drywall, Painting & More",
+  description:
+    "Local handyman in Tampa Bay for door repair, drywall, interior painting, LVP flooring, TV mounting and home maintenance. Request a clear project-based estimate.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: "Handyman in Tampa Bay | Handyman Tampa",
+    description: "Home repairs, installation, painting and flooring. Send project photos for a free estimate.",
+    url: "/",
+    type: "website",
+  },
+};
+
+const comparisonProjects = [
+  { id: "wood-deck-build", heading: "Wood Deck: Framing to Finished", firstLabel: "During", secondLabel: "After" },
+  { id: "bedroom-lvp-floor", heading: "Bedroom Flooring: Before & After", firstLabel: "Before", secondLabel: "After" },
+  { id: "tv-wood-slat-feature-wall", heading: "TV Wall: Before & After", firstLabel: "Before", secondLabel: "After" },
+].map((item) => {
+  const project = projects.find((candidate) => candidate.id === item.id)!;
+  const first = project.photos.find((photo) => photo.stage === "before") || project.photos.find((photo) => photo.stage === "progress")!;
+  const second = project.photos.find((photo) => photo.stage === "after")!;
+  return { ...item, first, second };
+});
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-neutral-950 text-white">
-      {/* HEADER */}
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-neutral-950/90 backdrop-blur">
-  <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
-
-    {/* LOGO */}
-    <a href="/" className="flex items-center gap-3 hover:opacity-90 transition">
-      <img
-        src="/logo.png"
-        alt="Tampa Handyman"
-        className="h-9 w-auto object-contain"
-      />
-      <span className="text-lg md:text-xl font-extrabold tracking-wide text-white">
-        {business.name}
-      </span>
-    </a>
-
-    {/* NAV */}
-    <nav className="hidden gap-6 text-sm text-white/80 md:flex">
-      <a href="#services" className="hover:text-white transition">
-        Services
-      </a>
-      <a href="#areas" className="hover:text-white transition">
-        Areas
-      </a>
-      <a href="#contact" className="hover:text-white transition">
-        Contact
-      </a>
-    </nav>
-
-    {/* CALL BUTTON */}
-    <a
-      href={`tel:${business.phone}`}
-      className="rounded-full bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-300 transition"
-    >
-      Call Now
-    </a>
-
-  </div>
-</header>
-
-      {/* HERO */}
-      <section className="mx-auto grid max-w-7xl gap-10 px-5 py-16 md:grid-cols-2 md:items-center md:py-24">
-        <div>
-          <p className="mb-4 inline-flex rounded-full border border-yellow-400/40 px-4 py-2 text-sm text-yellow-300">
-            Local handyman service • Free estimates
-          </p>
-
-          <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-            Reliable Handyman <br /> in {business.city}
-          </h1>
-          <p className="mt-4 text-lg text-white/70">
-            Same-day service • Free estimates • 5-star rated
-          </p>
-
-          <p className="mt-5 max-w-xl text-lg leading-8 text-white/75">
-            Professional home repairs, installations, painting, drywall,
-            flooring, and general handyman work with clean results and clear
-            communication.
-          </p>
-
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <a
-              href={`tel:${business.phone}`}
-              className="rounded-xl bg-yellow-400 px-6 py-4 text-center text-lg font-bold text-black"
-            >
-              Call {business.displayPhone}
-            </a>
-
-            <a
-              href="sms:+13054650028"
-              className="rounded-xl border border-white/20 px-6 py-4 text-center text-lg font-semibold text-white"
-            >
-              Text for Estimate
-            </a>
-          </div>
-          <p className="mt-3 text-sm text-white/60">
-            Usually responds within 9 minutes
-          </p>
-          <div className="mt-8 grid grid-cols-3 gap-3 text-center">
-            <div className="rounded-2xl bg-white/10 p-4">
-              <div className="text-2xl font-bold">Clean</div>
-              <div className="text-xs text-white/60">Work Area</div>
-            </div>
-            <div className="rounded-2xl bg-white/10 p-4">
-              <div className="text-2xl font-bold">Fast</div>
-              <div className="text-xs text-white/60">Response</div>
-            </div>
-            <div className="rounded-2xl bg-white/10 p-4">
-              <div className="text-2xl font-bold">Local</div>
-              <div className="text-xs text-white/60">{business.city}</div>
-            </div>
-          </div>
+    <main className="min-h-screen bg-[#0e1013] text-[#f5f5f5]">
+      <BusinessJsonLd />
+      <header className="sticky top-0 z-40 border-b border-[#2b2c30] bg-[#0e1013]/95 px-[5vw] py-5 backdrop-blur">
+        <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-4">
+          <Link href="/" className="text-[22px] font-extrabold tracking-tight max-[520px]:text-lg">{business.name}</Link>
+          <nav aria-label="Main menu" className="hidden items-center gap-6 text-sm text-white/75 md:flex">
+            <Link href="#services" className="hover:text-white">Services</Link>
+            {projects.length > 0 && <Link href="/projects" className="hover:text-white">Projects</Link>}
+            <Link href="#areas" className="hover:text-white">Areas</Link>
+            <Link href="/guides" className="hover:text-white">Helpful Guides</Link>
+          </nav>
+          <TrackingLink href="#estimate" eventName="estimate_cta" eventLabel="home_header"
+            className="rounded-[14px] bg-[#ffd43b] px-[23px] py-[13px] text-sm font-extrabold text-[#151515] hover:bg-yellow-300 max-[520px]:px-3 max-[520px]:py-[11px] max-[520px]:text-xs">
+            Request an Estimate
+          </TrackingLink>
         </div>
+      </header>
 
-        <div className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl">
-          <div className="rounded-2xl bg-neutral-900 p-6">
-            <h2 className="text-2xl font-bold">Get a Free Estimate</h2>
-            <p className="mt-2 text-white/65">
-              Send photos and a short description of the project.
+      <section className="mx-auto grid max-w-[1280px] gap-10 px-[5vw] py-[50px] md:gap-[55px] md:py-[80px] lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:pb-[85px]">
+          <div>
+            <p className="text-sm font-extrabold uppercase tracking-[0.1em] text-[#ffd43b]">
+              Tampa Bay • Home repairs & improvements
             </p>
-
-            <div className="mt-6 space-y-3 text-white/80">
-              <p>✅ Doors, drywall, painting, flooring</p>
-              <p>✅ Small repairs and installations</p>
-              <p>✅ Clear project-based pricing</p>
-              <p>✅ Materials can be billed by receipt</p>
+            <h1 className="mt-[15px] max-w-4xl text-[clamp(42px,5vw,69px)] font-extrabold leading-[1.06] tracking-[-0.06em]">
+              Handyman Services in Tampa Bay, Florida
+            </h1>
+            <p className="mt-5 max-w-[600px] text-lg leading-[1.75] text-[#bec2ca]">
+              From door repair and drywall to painting, vinyl plank flooring, TV mounting and outdoor projects.
+              Real work, clear communication and project-based estimates.
+            </p>
+            <div className="mt-7 flex flex-col gap-[13px] sm:flex-row">
+              <Link href="#estimate" className="rounded-[14px] bg-[#ffd43b] px-[23px] py-[13px] text-center font-extrabold text-[#151515] hover:bg-yellow-300">
+                Get a Free Project Estimate
+              </Link>
+              <TrackingLink href={`sms:${business.phone}`} eventName="click_to_text" eventLabel="home_hero"
+                className="rounded-[14px] border border-[#696c74] px-[23px] py-[13px] text-center font-bold hover:bg-white/10">
+                Text Project Photos
+              </TrackingLink>
             </div>
-
-            <a
-              href="sms:+13054650028"
-              className="mt-6 block rounded-xl bg-white px-5 py-4 text-center font-bold text-black"
-            >
-              Send Project Details
-            </a>
+            <p className="mt-5 text-[13px] text-[#a5a5ac]">Real job photos • Thumbtack reviews linked to their original source</p>
           </div>
+          <aside className="overflow-hidden rounded-[20px] border border-[#393b42] bg-[#1c2028]">
+            <Link href="/projects/wood-deck-build" className="group block">
+              <div className="relative aspect-[4/3] w-full overflow-hidden">
+                <Image src="/projects/wood-deck-build-card.webp" alt="Completed wooden deck with steps and black railing panels" fill priority sizes="(max-width: 1024px) 90vw, 44vw" className="object-cover transition-transform group-hover:scale-[1.025]" />
+              </div>
+              <p className="px-5 py-4 font-semibold text-[#f8cf48]">See a real completed project →</p>
+            </Link>
+          </aside>
+      </section>
+
+      <Portfolio
+        featuredOnly
+        limit={6}
+        heading="See Our Projects"
+        description="Examples of actual handyman jobs: wood decks, TV accent walls, flooring, pergolas and exterior improvements. No stock or AI-generated project photos."
+      />
+
+      <section className="mx-auto max-w-[1200px] px-[5vw] py-[70px]">
+        <p className="text-sm font-extrabold uppercase tracking-[0.1em] text-[#ffd43b]">Photo sequences</p>
+        <h2 className="mt-2 text-[clamp(30px,4vw,47px)] font-extrabold tracking-[-0.045em]">Before, During &amp; After</h2>
+        <p className="mt-3 max-w-[720px] text-lg leading-[1.75] text-[#bec2ca]">Selected projects with real progress photographs. Open a project for captions and the complete available sequence.</p>
+        <div className="mt-[35px] space-y-6">
+          {comparisonProjects.map((item) => (
+            <article key={item.id} className="rounded-[20px] border border-[#383b40] bg-[#191c22] p-5 md:p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h3 className="text-[22px] font-bold">{item.heading}</h3>
+                <Link href={`/projects/${item.id}`} className="text-sm font-bold text-[#efcd59] underline underline-offset-4">View project</Link>
+              </div>
+              <div className="mt-[15px] grid gap-5 md:grid-cols-2">
+                {[[item.first, item.firstLabel], [item.second, item.secondLabel]].map(([photo, label]) => {
+                  const image = photo as typeof item.first;
+                  return (
+                    <figure key={image.src}>
+                      <div className="relative h-[260px] overflow-hidden rounded-xl bg-[#0c0f13] sm:h-[320px]">
+                        <Image src={image.src} alt={image.alt} fill sizes="(max-width: 768px) 90vw, 45vw" className="object-contain" />
+                      </div>
+                      <figcaption className="px-0.5 py-2 font-bold text-[#efcd59]">{label as string}</figcaption>
+                    </figure>
+                  );
+                })}
+              </div>
+            </article>
+          ))}
         </div>
       </section>
 
-      {/* SERVICES */}
-      <section id="services" className="bg-white px-5 py-16 text-black">
+      <section id="services" className="bg-white px-5 py-16 text-neutral-950">
         <div className="mx-auto max-w-7xl">
-          <p className="text-center font-semibold text-yellow-600">
-            What we do
+          <p className="font-semibold text-amber-700">Local handyman services</p>
+          <h2 className="mt-2 text-3xl font-extrabold md:text-5xl">What Can We Help You Fix?</h2>
+          <p className="mt-4 max-w-3xl text-lg text-neutral-700">
+            Select your project for details about typical repairs, what to photograph, and how to get an estimate.
           </p>
-
-          <h2 className="mt-2 text-center text-3xl font-extrabold md:text-5xl">
-            Handyman Services
-          </h2>
-
-          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {services.map((service) => (
-              <a
-                key={service.title}
-                href={`/services/${service.slug}`}
-                className="group relative h-[320px] overflow-hidden rounded-2xl shadow-lg"
-              >
-                <img
-                  src={service.image}
-                  alt={service.title}
-                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                />
-
-                <div className="absolute inset-0 bg-black/35" />
-
-                <div className="absolute bottom-0 p-6">
-                  <h3 className="text-xl font-bold text-white">
-                    {service.title}
-                  </h3>
-
-                  <p className="mt-2 text-sm leading-6 text-white/85">
-                    {service.description}
-                  </p>
-
-                  <p className="mt-4 text-sm font-bold text-yellow-400">
-                    Learn more →
-                  </p>
+          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {services.map((service, index) => (
+              <Link key={service.slug} href={`/services/${service.slug}`}
+                className="group flex flex-col overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50 transition hover:-translate-y-1 hover:border-amber-500 hover:shadow-lg">
+                <div className="relative aspect-[16/9] overflow-hidden bg-neutral-200">
+                  <Image src={service.image} alt={`Example of ${service.title.toLowerCase()}`} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover transition-transform group-hover:scale-[1.03]" />
                 </div>
-              </a>
+                <div className="flex flex-1 flex-col p-6">
+                  <p className="font-mono text-xs text-amber-700">{String(index + 1).padStart(2, "0")} / HOME SERVICES</p>
+                  <h3 className="mt-3 text-xl font-bold group-hover:text-amber-800">{service.title}</h3>
+                  <p className="mt-3 flex-1 leading-7 text-neutral-700">{service.description}</p>
+                  <p className="mt-5 font-bold text-amber-800">View service details →</p>
+                </div>
+              </Link>
             ))}
           </div>
         </div>
       </section>
 
-      {/* WHY */}
-      <section className="px-5 py-16">
+      <section className="border-y border-white/10 bg-neutral-900 px-5 py-16">
         <div className="mx-auto max-w-7xl">
-          <h2 className="text-3xl font-extrabold md:text-5xl">
-            Why Homeowners Choose Us
-          </h2>
-
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
+          <h2 className="text-3xl font-extrabold md:text-5xl">How to Get Started</h2>
+          <div className="mt-10 grid gap-5 md:grid-cols-3">
             {[
-              [
-                "Project-Based Pricing",
-                "No confusing hourly surprises. Clear pricing for the job.",
-              ],
-              [
-                "Clean Work",
-                "We respect your home and leave the work area clean.",
-              ],
-              [
-                "Reliable Communication",
-                "Fast replies, clear updates, and honest expectations.",
-              ],
-            ].map(([title, text]) => (
-              <div key={title} className="rounded-2xl bg-white/10 p-6">
-                <h3 className="text-xl font-bold">{title}</h3>
-                <p className="mt-3 text-white/65">{text}</p>
+              ["01", "Share your project", "Send the task details, photos, and approximate location."],
+              ["02", "Review the scope", "We'll discuss the work, materials, and a project-based estimate."],
+              ["03", "Schedule the work", "Agree on timing and the next steps before work starts."],
+            ].map(([number, title, detail]) => (
+              <div key={number} className="rounded-2xl border border-white/15 bg-white/5 p-7">
+                <p className="font-mono text-3xl font-bold text-yellow-400">{number}</p>
+                <h3 className="mt-5 text-xl font-bold">{title}</h3>
+                <p className="mt-3 leading-7 text-white/70">{detail}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* AREAS */}
-      {/* AREAS */}
-      <section id="areas" className="bg-neutral-900 px-5 py-16">
+      <section id="areas" className="bg-neutral-950 px-5 py-16">
         <div className="mx-auto max-w-7xl">
-          <h2 className="text-3xl font-extrabold md:text-5xl">
-            Choose Your Service Area
-          </h2>
-
-          <p className="mt-4 max-w-2xl text-white/65">
-            Select your city to view handyman services available in your area.
-          </p>
-
-          <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {cities.map((location) => (
-              <a
-                key={location.slug}
-                href={`/handyman/${location.slug}`}
-                className="rounded-2xl border border-white/10 bg-white/10 px-5 py-4 font-semibold text-white transition hover:bg-yellow-400 hover:text-black"
-              >
-                {location.name}
-              </a>
+          <p className="font-semibold text-yellow-400">Where we work</p>
+          <h2 className="mt-2 text-3xl font-extrabold md:text-5xl">Serving Tampa Bay Communities</h2>
+          <p className="mt-4 max-w-2xl text-white/70">Based in the Tampa Bay area and serving surrounding neighborhoods. Availability depends on your project and location.</p>
+          <div className="mt-9 flex flex-wrap gap-3">
+            {cities.map((city) => (
+              <Link key={city.slug} href={`/handyman/${city.slug}`}
+                className="rounded-full border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold hover:border-yellow-400 hover:text-yellow-300">
+                {city.name}
+              </Link>
             ))}
           </div>
-
-          <div className="mt-10 overflow-hidden rounded-2xl border border-white/10">
-            <iframe
-              src="https://maps.google.com/maps?hl=en&q=Tampa Bay Area Florida&t=&z=9&ie=UTF8&iwloc=B&output=embed"
-              className="h-[400px] w-full"
-              loading="lazy"
-            ></iframe>
-          </div>
-
-          <p className="mt-6 text-sm text-white/60">
-            Serving Tampa, Clearwater, St. Petersburg, Brandon, Riverview,
-            Wesley Chapel, Largo and nearby areas.
-          </p>
         </div>
       </section>
+
+      <section className="bg-neutral-100 px-5 py-14 text-neutral-950">
+        <div className="mx-auto max-w-7xl">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="font-semibold text-amber-700">Homeowner tips</p>
+              <h2 className="mt-2 text-3xl font-extrabold">Helpful Repair Guides</h2>
+            </div>
+            <Link href="/guides" className="font-bold underline underline-offset-4">Explore guides</Link>
+          </div>
+          <div className="mt-8 grid gap-5 md:grid-cols-2">
+            {[
+              { title: "Why Interior Doors Stick in Florida", href: "/guides/door-sticking-florida", desc: "Common causes, simple checks, and when a door may need professional adjustment." },
+              { title: "How to Photograph a Repair for a Faster Estimate", href: "/guides/how-to-photograph-a-repair", desc: "Get a more useful project estimate with a few well-chosen photos and measurements." },
+            ].map((guide) => (
+              <Link key={guide.href} href={guide.href} className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/10 hover:ring-amber-500">
+                <h3 className="text-xl font-bold">{guide.title}</h3>
+                <p className="mt-3 leading-7 text-neutral-700">{guide.desc}</p>
+                <p className="mt-4 font-bold text-amber-800">Read guide →</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <Reviews />
       <EstimateForm />
-      {/* CONTACT */}
-      <section id="contact" className="bg-yellow-400 px-5 py-16 text-black">
+      <section id="contact" className="bg-yellow-400 px-5 py-14 text-neutral-950">
         <div className="mx-auto max-w-4xl text-center">
-          <h2 className="text-3xl font-extrabold md:text-5xl">
-            Ready to Start Your Project?
-          </h2>
-          <p className="mt-4 text-lg">
-            Call or text today for a free estimate.
-          </p>
-
-          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-            <a
-              href={`tel:${business.phone}`}
-              className="rounded-xl bg-black px-8 py-4 text-lg font-bold text-white"
-            >
-              Call Now
-            </a>
-            <a
-              href="sms:+13054650028"
-              className="rounded-xl border border-black px-8 py-4 text-lg font-bold"
-            >
-              Text Us
-            </a>
+          <h2 className="text-3xl font-extrabold md:text-5xl">Have a Project in Mind?</h2>
+          <p className="mt-4 text-lg">Call, text, or send project photos. We&apos;ll help you figure out the next step.</p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <TrackingLink href={`tel:${business.phone}`} eventName="click_to_call" eventLabel="home_footer"
+              className="rounded-xl bg-neutral-950 px-7 py-4 font-bold text-white">Call Now</TrackingLink>
+            <TrackingLink href={`sms:${business.phone}`} eventName="click_to_text" eventLabel="home_footer"
+              className="rounded-xl border border-neutral-950 px-7 py-4 font-bold">Text Us</TrackingLink>
           </div>
         </div>
       </section>
-
-      {/* MOBILE STICKY BUTTON */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 grid grid-cols-2 gap-2 border-t border-white/10 bg-neutral-950 p-3 md:hidden">
-        <a
-          href={`tel:${business.phone}`}
-          className="rounded-xl bg-yellow-400 py-3 text-center font-bold text-black"
-        >
-          Call
-        </a>
-        <a
-          href="sms:+13054650028"
-          className="rounded-xl bg-white py-3 text-center font-bold text-black"
-        >
-          Text
-        </a>
-      </div>
     </main>
   );
 }

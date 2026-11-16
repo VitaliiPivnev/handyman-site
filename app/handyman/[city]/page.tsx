@@ -1,3 +1,6 @@
+import Link from "next/link";
+import Image from "next/image";
+import { notFound } from "next/navigation";
 import EstimateForm from "../../components/EstimateForm";
 import { business } from "../../data/business";
 import { cities, getCityName, services } from "../../data/site";
@@ -8,12 +11,18 @@ export async function generateMetadata({
   params: Promise<{ city: string }>;
 }) {
   const { city } = await params;
+  if (!cities.some((item) => item.slug === city)) notFound();
   const cityFormatted = getCityName(city);
 
   return {
     title: `Handyman in ${cityFormatted}, FL | Handyman Tampa`,
     description: `Reliable handyman services in ${cityFormatted}, FL. Doors, drywall, painting, flooring and more. Call for a free estimate.`,
+    alternates: { canonical: `/handyman/${city}` },
   };
+}
+
+export function generateStaticParams() {
+  return cities.map((city) => ({ city: city.slug }));
 }
 
 export default async function CityPage({
@@ -24,33 +33,35 @@ export default async function CityPage({
   const { city: citySlug } = await params;
   const city = cities.find((c) => c.slug === citySlug);
 
-  if (!city) return null;
+  if (!city) notFound();
 
   return (
     <main className="min-h-screen bg-neutral-950 text-white">
       <header className="sticky top-0 z-50 border-b border-white/10 bg-neutral-950/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
-          <a href="/" className="flex items-center gap-3 hover:opacity-90 transition">
-            <img
+          <Link href="/" className="flex items-center gap-3 hover:opacity-90 transition">
+            <Image
               src="/logo.png"
               alt="Tampa Handyman"
+              width={54}
+              height={36}
               className="h-9 w-auto object-contain"
             />
             <span className="text-lg md:text-xl font-extrabold tracking-wide text-white">
               {business.name}
             </span>
-          </a>
+          </Link>
 
           <nav className="hidden gap-6 text-sm text-white/80 md:flex">
-            <a href="/#services" className="hover:text-white transition">
+            <Link href="/#services" className="hover:text-white transition">
               Services
-            </a>
-            <a href="/#areas" className="hover:text-white transition">
+            </Link>
+            <Link href="/#areas" className="hover:text-white transition">
               Areas
-            </a>
-            <a href="/#contact" className="hover:text-white transition">
+            </Link>
+            <Link href="/#contact" className="hover:text-white transition">
               Contact
-            </a>
+            </Link>
           </nav>
 
           <a
@@ -108,10 +119,12 @@ export default async function CityPage({
                 href={`/handyman/${citySlug}/${service.slug}`}
                 className="group relative h-[320px] overflow-hidden rounded-2xl shadow-lg"
               >
-                <img
+                <Image
                   src={service.image}
                   alt={service.title}
-                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                  className="object-cover transition duration-500 group-hover:scale-105"
                 />
 
                 <div className="absolute inset-0 bg-black/35 transition group-hover:bg-black/50" />

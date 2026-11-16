@@ -23,6 +23,13 @@
 # misc
 .DS_Store
 *.pem
+*.key
+*.p12
+*.bak
+*.backup
+
+# local implementation brief (not part of the deployed application)
+/HANDYMANTAMPA_CODEX_MASTER_TASK.md
 
 # debug
 npm-debug.log*
