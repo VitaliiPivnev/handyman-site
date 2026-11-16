@@ -21,7 +21,7 @@ export default function DoorGuide() {
       <h2 className="mt-8 text-2xl font-bold">3. Consider moisture and paint</h2>
       <p className="mt-3">Humidity can change the dimensions of some wood products. Paint buildup around the edge can also cause rubbing. Before sanding or trimming, understand whether the problem is temporary or the result of underlying movement.</p>
       <h2 className="mt-8 text-2xl font-bold">4. Know when it needs more than a simple adjustment</h2>
-      <p className="mt-3">If the door is dragging, hinges are pulling away, or the frame appears significantly shifted, a repair assessment is worthwhile. Door or opening damage that involves structural framing or a permitted exterior replacement needs an appropriately licensed contractor.</p>
+      <p className="mt-3">If the door is dragging, hinges are pulling away, or the frame appears significantly shifted, send photos of the full opening, hinges and problem area for review. Structural framing or a permitted exterior replacement may require licensed work, but the visible symptoms help clarify the next step.</p>
       <h2 className="mt-8 text-2xl font-bold">What photos help with an estimate?</h2>
       <p className="mt-3">Take a full-height photo of the closed door, one close-up of the rubbing or latch area, and one photo of the hinges. Let us know whether the door is hollow-core or solid-core if you know.</p>
       <div className="mt-10 rounded-2xl bg-neutral-100 p-7">

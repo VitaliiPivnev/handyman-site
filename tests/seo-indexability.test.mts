@@ -145,6 +145,29 @@ test("public copy avoids known SEO-template and unsupported marketing phrases", 
   for (const pattern of forbidden) assert.doesNotMatch(source, pattern);
 });
 
+test("marketing copy invites a scope review instead of directing leads to another contractor", async () => {
+  const source = await publicContentSource();
+  const directReferralPhrases = [
+    /contact (?:a|an) licensed (?:contractor|plumber|electrician|professional)/i,
+    /referred? (?:to|out to) (?:an? )?(?:appropriately |properly )?licensed/i,
+    /must be handled by (?:an? |the )?(?:appropriately |properly )?licensed/i,
+    /must be (?:performed|completed) by (?:an? |the )?licensed/i,
+    /should be completed by (?:an? |the )?licensed/i,
+    /outside (?:our|the) handyman scope/i,
+    /may need another contractor/i,
+    /we (?:do not|don't) (?:do|offer|handle)/i,
+  ];
+  for (const pattern of directReferralPhrases) assert.doesNotMatch(source, pattern);
+
+  for (const slug of [
+    "door-repair", "flooring-installation", "tv-mounting", "plumbing-repairs",
+    "fence-repair", "general-handyman-services", "deck-repair", "exterior-painting",
+  ]) {
+    const answers = serviceDetails[slug].faqs.map((faq) => faq.answer).join(" ");
+    assert.match(answers, /send|photo|review/i, `${slug} should invite a project review`);
+  }
+});
+
 test("real portfolio inventory and contact details remain intact", async () => {
   const { projects } = await import("../app/data/projects.ts");
   assert.equal(projects.length, 33);
@@ -165,7 +188,8 @@ test("privacy and terms pages have clear metadata and canonical URLs", async () 
   assert.match(privacy, /canonical: "\/privacy"/);
   assert.match(terms, /canonical: "\/terms"/);
   assert.match(privacy, /Project requests are delivered through Telegram/);
-  assert.match(terms, /Work outside handyman scope/);
+  assert.match(terms, /Licensed and permit-related work/);
+  assert.match(terms, /submit project details for an initial scope review/);
 });
 
 test("primary pages retain self-referencing canonical metadata and stay indexable", async () => {
