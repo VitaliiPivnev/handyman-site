@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getClientIp, withinRateLimit } from "./rate-limit";
 
 export const runtime = "nodejs";
 
@@ -6,8 +7,6 @@ const MAX_BODY = 4 * 1024 * 1024; // Vercel platform cap is 4.5MB including mult
 const MAX_PHOTOS = 3;
 const MAX_PHOTO_SIZE = 1 * 1024 * 1024;
 const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]);
-const RATE_LIMIT_WINDOW_SECONDS = 10 * 60;
-const RATE_LIMIT_MAX = 5;
 
 function asText(data: FormData, name: string, limit: number): string | null {
   const value = data.get(name);
@@ -44,35 +43,6 @@ async function verifyTurnstile(token: string, ip: string | null): Promise<boolea
     return result.success === true && (!expected || result.hostname === expected);
   } catch {
     return false;
-  }
-}
-
-async function sha256(value: string): Promise<string> {
-  const bytes = new TextEncoder().encode(value);
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
-async function withinRateLimit(ip: string | null): Promise<boolean> {
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-  const enforce = process.env.RATE_LIMIT_MODE === "enforce";
-  if (!url || !token) return !enforce;
-  if (!ip) return !enforce;
-  try {
-    const key = `estimate:${(await sha256(ip)).slice(0, 32)}`;
-    const response = await fetch(`${url.replace(/\/$/, "")}/multi-exec`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify([["INCR", key], ["EXPIRE", key, RATE_LIMIT_WINDOW_SECONDS, "NX"]]),
-      cache: "no-store",
-      signal: AbortSignal.timeout(5000),
-    });
-    if (!response.ok) return !enforce;
-    const result = await response.json() as Array<{ result?: number }>;
-    return Number(result[0]?.result || 0) <= RATE_LIMIT_MAX;
-  } catch {
-    return !enforce;
   }
 }
 
@@ -142,13 +112,18 @@ export async function POST(request: Request) {
       return formError("One of the selected files is not a supported photo. Please choose JPG, PNG, WebP, or HEIC images.");
     }
 
-    const forwarded = request.headers.get("x-forwarded-for");
-    const ip = forwarded?.split(",")[0]?.trim() || null;
-    if (!(await withinRateLimit(ip))) {
-      return formError("Too many requests were sent. Please wait ten minutes, then try again, or call or text us.", 429);
-    }
+    const ip = getClientIp(request);
     const verified = await verifyTurnstile(String(form.get("cf-turnstile-response") || ""), ip);
     if (!verified) return formError("Security verification failed. Please return to the form and retry.", 403);
+
+    const rateLimit = await withinRateLimit(ip);
+    if (rateLimit.status === "limited") {
+      return formError("Too many requests were sent. Please wait ten minutes, then try again, or call or text us.", 429);
+    }
+    if (rateLimit.status === "unavailable") {
+      console.error("Estimate rate limit unavailable", { reason: rateLimit.reason });
+      return formError("The form is temporarily unavailable. Please call or text us instead.", 503);
+    }
 
     const isProduction = process.env.VERCEL_ENV === "production";
     const deliveryMode = process.env.LEAD_DELIVERY_MODE || (isProduction ? "telegram" : "test");
