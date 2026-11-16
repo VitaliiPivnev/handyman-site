@@ -146,8 +146,7 @@ test("parallel double POST atomically acquires only one delivery lock", async ()
     claimSubmission(submissionId),
     claimSubmission(submissionId),
   ]);
-  assert.equal(first.status, "acquired");
-  assert.equal(second.status, "processing");
+  assert.deepEqual([first.status, second.status].sort(), ["acquired", "processing"]);
   assert.equal(calls, 2);
 });
 

@@ -7,7 +7,7 @@ export default function BusinessJsonLd() {
     name: business.name,
     url: "https://handymantampa.net/",
     telephone: business.phone,
-    areaServed: ["Tampa", "Westchase", "Carrollwood", "Clearwater", "St. Petersburg", "Brandon", "Riverview"].map(
+    areaServed: ["Westchase", "Citrus Park", "Town 'n' Country", "Oldsmar", "Odessa", "Tampa", "Clearwater", "Largo", "St. Petersburg"].map(
       (name) => ({ "@type": "Place", name: `${name}, FL, USA` })
     ),
     sameAs: ["https://www.thumbtack.com/fl/tampa/handyman/vitalii-handypro/service/528569101242605578"],

@@ -26,7 +26,7 @@ export default function PhotoGuide() {
       <p className="mt-3">Avoid including personal documents, mail, children&apos;s photos, or other private details in project photos. A clear view of the work area is enough.</p>
       <div className="mt-10 rounded-2xl bg-neutral-100 p-7">
         <h2 className="text-2xl font-bold">Ready to request a project estimate?</h2>
-        <p className="mt-2 text-neutral-700">Tell us what needs to be done and attach up to four photos.</p>
+        <p className="mt-2 text-neutral-700">Tell us what needs to be done and attach up to three useful photos.</p>
         <Link href="/#estimate" className="mt-5 inline-block rounded-xl bg-neutral-950 px-6 py-3 text-base font-bold text-white">Request Free Estimate</Link>
       </div>
     </article>

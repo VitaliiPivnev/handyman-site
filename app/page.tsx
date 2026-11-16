@@ -11,12 +11,12 @@ import TrackingLink from "./components/TrackingLink";
 import BusinessJsonLd from "./components/BusinessJsonLd";
 
 export const metadata: Metadata = {
-  title: "Handyman in Tampa Bay, FL | Doors, Drywall, Painting & More",
+  title: "Handyman Tampa, FL | Home Repair in Tampa Bay",
   description:
-    "Local handyman in Tampa Bay for door repair, drywall, interior painting, LVP flooring, TV mounting and home maintenance. Request a clear project-based estimate.",
+    "Handyman services in Tampa Bay near Westchase and ZIP 33626. Drywall, doors, painting, flooring, mounting, fence repair and home projects. Send photos for an estimate.",
   alternates: { canonical: "/" },
   openGraph: {
-    title: "Handyman in Tampa Bay | Handyman Tampa",
+    title: "Handyman Tampa, Westchase & Tampa Bay",
     description: "Home repairs, installation, painting and flooring. Send project photos for a free estimate.",
     url: "/",
     type: "website",
@@ -40,7 +40,7 @@ export default function Home() {
       <BusinessJsonLd />
       <header className="sticky top-0 z-40 border-b border-[#2b2c30] bg-[#0e1013]/95 px-[5vw] py-5 backdrop-blur">
         <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-4">
-          <Link href="/" className="text-[22px] font-extrabold tracking-tight max-[520px]:text-lg">{business.name}</Link>
+          <Link href="/" className="min-w-0 truncate text-[22px] font-extrabold tracking-tight max-[520px]:text-base">{business.name}</Link>
           <nav aria-label="Main menu" className="hidden items-center gap-6 text-sm text-white/75 md:flex">
             <Link href="#services" className="hover:text-white">Services</Link>
             {projects.length > 0 && <Link href="/projects" className="hover:text-white">Projects</Link>}
@@ -48,8 +48,8 @@ export default function Home() {
             <Link href="/guides" className="hover:text-white">Helpful Guides</Link>
           </nav>
           <TrackingLink href="#estimate" eventName="estimate_cta" eventLabel="home_header"
-            className="rounded-[14px] bg-[#ffd43b] px-[23px] py-[13px] text-sm font-extrabold text-[#151515] hover:bg-yellow-300 max-[520px]:px-3 max-[520px]:py-[11px] max-[520px]:text-xs">
-            Request an Estimate
+            className="shrink-0 rounded-[14px] bg-[#ffd43b] px-[23px] py-[13px] text-sm font-extrabold text-[#151515] hover:bg-yellow-300 max-[520px]:px-3 max-[520px]:py-[11px] max-[520px]:text-xs">
+            <span className="max-[420px]:hidden">Request an </span>Estimate
           </TrackingLink>
         </div>
       </header>
@@ -60,11 +60,11 @@ export default function Home() {
               Tampa Bay • Home repairs & improvements
             </p>
             <h1 className="mt-[15px] max-w-4xl text-[clamp(42px,5vw,69px)] font-extrabold leading-[1.06] tracking-[-0.06em]">
-              Handyman Services in Tampa Bay, Florida
+              Handyman Services in Tampa, Westchase &amp; Tampa Bay
             </h1>
             <p className="mt-5 max-w-[600px] text-lg leading-[1.75] text-[#bec2ca]">
-              From door repair and drywall to painting, vinyl plank flooring, TV mounting and outdoor projects.
-              Real work, clear communication and project-based estimates.
+              Serving projects near Westchase and ZIP 33626, with availability across Tampa Bay.
+              Get help with drywall, doors, painting, flooring, TV mounting, fence repairs and practical household projects.
             </p>
             <div className="mt-7 flex flex-col gap-[13px] sm:flex-row">
               <Link href="#estimate" className="rounded-[14px] bg-[#ffd43b] px-[23px] py-[13px] text-center font-extrabold text-[#151515] hover:bg-yellow-300">
@@ -91,7 +91,7 @@ export default function Home() {
         featuredOnly
         limit={6}
         heading="See Our Projects"
-        description="Examples of actual handyman jobs: wood decks, TV accent walls, flooring, pergolas and exterior improvements. No stock or AI-generated project photos."
+        description="Examples of actual handyman jobs, including wood decks, TV accent walls, flooring, pergolas and exterior improvements."
       />
 
       <section className="mx-auto max-w-[1200px] px-[5vw] py-[70px]">
@@ -128,8 +128,14 @@ export default function Home() {
           <p className="font-semibold text-amber-700">Local handyman services</p>
           <h2 className="mt-2 text-3xl font-extrabold md:text-5xl">What Can We Help You Fix?</h2>
           <p className="mt-4 max-w-3xl text-lg text-neutral-700">
-            Select your project for details about typical repairs, what to photograph, and how to get an estimate.
+            Select your project for useful scope details, real work examples, what to photograph, and how to request an estimate.
           </p>
+          <div className="mt-5 flex flex-wrap gap-3 text-sm font-bold">
+            {["drywall-repair", "fence-repair", "door-repair", "general-handyman-services"].map((slug) => {
+              const service = services.find((item) => item.slug === slug)!;
+              return <Link key={slug} href={`/services/${slug}`} className="rounded-full border border-amber-700/30 px-4 py-2 text-amber-900 hover:border-amber-700">{service.title}</Link>;
+            })}
+          </div>
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {services.map((service, index) => (
               <Link key={service.slug} href={`/services/${service.slug}`}
@@ -172,7 +178,7 @@ export default function Home() {
         <div className="mx-auto max-w-7xl">
           <p className="font-semibold text-yellow-400">Where we work</p>
           <h2 className="mt-2 text-3xl font-extrabold md:text-5xl">Serving Tampa Bay Communities</h2>
-          <p className="mt-4 max-w-2xl text-white/70">Based in the Tampa Bay area and serving surrounding neighborhoods. Availability depends on your project and location.</p>
+          <p className="mt-4 max-w-3xl text-white/70">Westchase, Citrus Park, Town &apos;n&apos; Country, Oldsmar and Odessa are closest to our regular service route. Other Tampa Bay locations depend on the project scope and schedule.</p>
           <div className="mt-9 flex flex-wrap gap-3">
             {cities.map((city) => (
               <Link key={city.slug} href={`/handyman/${city.slug}`}
@@ -195,7 +201,7 @@ export default function Home() {
           </div>
           <div className="mt-8 grid gap-5 md:grid-cols-2">
             {[
-              { title: "Why Interior Doors Stick in Florida", href: "/guides/door-sticking-florida", desc: "Common causes, simple checks, and when a door may need professional adjustment." },
+              { title: "Why Interior Doors Stick in Florida", href: "/guides/door-sticking-florida", desc: "Common causes, simple checks, and signs that a door needs more than a quick adjustment." },
               { title: "How to Photograph a Repair for a Faster Estimate", href: "/guides/how-to-photograph-a-repair", desc: "Get a more useful project estimate with a few well-chosen photos and measurements." },
             ].map((guide) => (
               <Link key={guide.href} href={guide.href} className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/10 hover:ring-amber-500">

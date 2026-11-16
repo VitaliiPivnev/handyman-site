@@ -17,17 +17,8 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Handyman Tampa | Handyman Services in Tampa Bay",
   description:
-    "Professional handyman services in Tampa Bay Area. Door repair, drywall repair, painting, flooring, TV mounting, plumbing repairs and more.",
+    "Handyman services in Tampa Bay for drywall, doors, painting, flooring, TV mounting, fence repairs and practical home projects.",
   metadataBase: new URL("https://handymantampa.net"),
-  keywords: [
-    "handyman Tampa",
-    "handyman Clearwater",
-    "handyman St Petersburg",
-    "door repair Tampa",
-    "drywall repair Tampa",
-    "TV mounting Tampa",
-    "home repair Tampa Bay",
-  ],
 };
 
 export default function RootLayout({

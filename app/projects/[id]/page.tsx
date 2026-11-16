@@ -47,9 +47,9 @@ export default async function ProjectDetailPage({ params }: Params) {
         ],
       }} />
       <header className="border-b border-neutral-200 bg-neutral-950 px-5 py-4 text-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <Link href="/" className="text-lg font-extrabold">{business.name}</Link>
-          <Link href="/#estimate" className="rounded-full bg-yellow-400 px-5 py-3 text-sm font-bold text-black">Get an estimate</Link>
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
+          <Link href="/" className="min-w-0 truncate text-lg font-extrabold">{business.name}</Link>
+          <Link href="/#estimate" className="shrink-0 rounded-full bg-yellow-400 px-4 py-3 text-sm font-bold text-black sm:px-5">Estimate</Link>
         </div>
       </header>
       <section className="mx-auto max-w-7xl px-5 py-12 md:py-16">
@@ -64,7 +64,7 @@ export default async function ProjectDetailPage({ params }: Params) {
         <section className="bg-neutral-100 px-5 py-14">
           <div className="mx-auto max-w-7xl">
             <h2 className="text-3xl font-extrabold">Before &amp; After</h2>
-            <p className="mt-3 max-w-2xl text-neutral-600">Unaltered work stages, resized for faster loading. Photos may have been taken from different angles.</p>
+            <p className="mt-3 max-w-2xl text-neutral-600">Photos show recorded stages of the work and may have been taken from different angles.</p>
             <div className="mt-7 grid gap-5 md:grid-cols-2">
               {[before, after].map((photo) => (
                 <figure key={photo.src} className="overflow-hidden rounded-2xl bg-white shadow-sm">

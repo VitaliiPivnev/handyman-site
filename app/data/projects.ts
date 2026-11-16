@@ -700,7 +700,7 @@ export const projects: Project[] = [
     "title": "Residential Exterior House Repainting",
     "category": "Fences & Exterior",
     "serviceSlug": "exterior-painting",
-    "summary": "Exterior house painting project. The owner confirmed that the green house and the light-colored house with red accents are before and after photos of the same property, taken from different angles.",
+    "summary": "Before-and-after photos show the same house from different angles, changing from a green exterior to a light finish with red accents.",
     "featured": false,
     "cover": "/projects/house-exterior-repainting-card.webp",
     "photos": [

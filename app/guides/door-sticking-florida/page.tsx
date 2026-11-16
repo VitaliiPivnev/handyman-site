@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Why Interior Doors Stick in Florida | Tampa Handyman Tips",
-  description: "Learn why a door sticks or won't latch in humid Florida weather, what to check, and when to request a professional door adjustment.",
+  description: "Learn why a door sticks or won't latch in humid Florida weather, what to check, and when the problem may need more than a simple adjustment.",
   alternates: { canonical: "/guides/door-sticking-florida" },
 };
 
@@ -20,7 +20,7 @@ export default function DoorGuide() {
       <p className="mt-3">Repeated use can loosen hinge screws. Visible sagging or a strike plate that is slightly out of alignment may require adjustment. Avoid forcing the latch or overtightening damaged screws.</p>
       <h2 className="mt-8 text-2xl font-bold">3. Consider moisture and paint</h2>
       <p className="mt-3">Humidity can change the dimensions of some wood products. Paint buildup around the edge can also cause rubbing. Before sanding or trimming, understand whether the problem is temporary or the result of underlying movement.</p>
-      <h2 className="mt-8 text-2xl font-bold">4. Know when to call a professional</h2>
+      <h2 className="mt-8 text-2xl font-bold">4. Know when it needs more than a simple adjustment</h2>
       <p className="mt-3">If the door is dragging, hinges are pulling away, or the frame appears significantly shifted, a repair assessment is worthwhile. Door or opening damage that involves structural framing or a permitted exterior replacement needs an appropriately licensed contractor.</p>
       <h2 className="mt-8 text-2xl font-bold">What photos help with an estimate?</h2>
       <p className="mt-3">Take a full-height photo of the closed door, one close-up of the rubbing or latch area, and one photo of the hinges. Let us know whether the door is hollow-core or solid-core if you know.</p>
