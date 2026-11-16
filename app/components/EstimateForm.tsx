@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import Script from "next/script";
 import LeadAttributionFields from "./LeadAttributionFields";
+import { isConfirmedNewLeadRedirect, trackConfirmedLead } from "./lead-analytics";
 
 // Vercel Functions accept at most 4.5 MB total request bodies. Reduce photos
 // locally before submitting; never upload originals through the API route.
@@ -112,6 +113,7 @@ export default function EstimateForm() {
       }
       const response = await fetch("/api/estimate", { method: "POST", body: form, redirect: "follow" });
       if (response.ok && response.redirected && new URL(response.url).pathname === "/thanks") {
+        if (isConfirmedNewLeadRedirect(response.url)) await trackConfirmedLead();
         try { sessionStorage.setItem(CLEAR_AFTER_SUCCESS_KEY, "1"); } catch { /* best effort */ }
         clearEstimateForm();
         window.location.assign(response.url);

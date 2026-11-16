@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { business } from "../data/business";
-import LeadConversion from "../components/LeadConversion";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
@@ -10,11 +9,10 @@ export default async function ThanksPage({
 }: {
   searchParams: Promise<{ lead?: string; test?: string }>;
 }) {
-  const { lead, test } = await searchParams;
+  const { test } = await searchParams;
   const isTest = test === "1";
   return (
     <main className="min-h-screen bg-neutral-950 px-5 py-20 text-white">
-      {!isTest && lead && /^[a-f0-9-]{36}$/i.test(lead) && <LeadConversion leadId={lead} />}
       <div className="mx-auto max-w-3xl text-center">
         <p className="font-semibold text-yellow-400">Estimate request</p>
         <h1 className="mt-3 text-4xl font-extrabold md:text-6xl">{isTest ? "Preview test accepted" : "Thank you!"}</h1>
