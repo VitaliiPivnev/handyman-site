@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { business } from "../../data/business";
-import { getService, services } from "../../data/site";
+import { cities, getService, services } from "../../data/site";
 import { serviceDetails } from "../../data/service-details";
 import EstimateForm from "../../components/EstimateForm";
 import Portfolio from "../../components/Portfolio";
@@ -33,6 +33,9 @@ export default async function ServicePage({ params }: Params) {
   const service = getService(slug);
   if (!service) notFound();
   const detail = serviceDetails[slug];
+  const linkedCities = ["tampa", "riverview", "lutz", "clearwater", "st-petersburg", "brandon"]
+    .map((citySlug) => cities.find((city) => city.slug === citySlug))
+    .filter((city): city is (typeof cities)[number] => Boolean(city));
 
   return (
     <main className="min-h-screen bg-neutral-950 text-white">
@@ -109,10 +112,16 @@ export default async function ServicePage({ params }: Params) {
               </div>
             ))}
           </div>
-          <p className="mt-8 text-sm text-white/60">
-            Also serving <Link className="underline" href="/handyman/tampa">Tampa</Link>, Westchase,
-            Clearwater, St. Petersburg, Brandon, and neighboring Tampa Bay areas.
-          </p>
+          <div className="mt-8 text-sm text-white/60">
+            <p>Explore our main handyman service-area pages:</p>
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2">
+              {linkedCities.map((city) => (
+                <Link key={city.slug} className="underline underline-offset-4" href={`/handyman/${city.slug}`}>
+                  Handyman in {city.name}
+                </Link>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
       <EstimateForm />

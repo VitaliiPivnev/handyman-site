@@ -4,6 +4,13 @@ import { notFound } from "next/navigation";
 import EstimateForm from "../../components/EstimateForm";
 import { business } from "../../data/business";
 import { cities, getCityName, services } from "../../data/site";
+import { detailProjects } from "../../data/projects";
+
+const cityProjectExamples = [
+  "bedroom-ceiling-drywall-repair",
+  "driveway-gate-fence-repair",
+  "bedroom-lvp-floor",
+].map((id) => detailProjects.find((project) => project.id === id)!);
 
 export async function generateMetadata({
   params,
@@ -114,9 +121,9 @@ export default async function CityPage({
 
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {services.map((service) => (
-              <a
+              <Link
                 key={service.slug}
-                href={`/handyman/${citySlug}/${service.slug}`}
+                href={`/services/${service.slug}`}
                 className="group relative h-[320px] overflow-hidden rounded-2xl shadow-lg"
               >
                 <Image
@@ -142,8 +149,33 @@ export default async function CityPage({
                     Learn more →
                   </p>
                 </div>
-              </a>
+              </Link>
             ))}
+          </div>
+
+          <div className="mt-12 border-t border-black/10 pt-10">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="font-semibold text-yellow-700">Real completed work</p>
+                <h2 className="mt-2 text-2xl font-extrabold md:text-3xl">Handyman Project Examples</h2>
+              </div>
+              <Link href="/projects" className="font-bold text-amber-800 underline underline-offset-4">
+                View all real projects
+              </Link>
+            </div>
+            <p className="mt-3 max-w-3xl text-black/65">
+              These are examples of completed work from our portfolio. Project locations are not assigned to this city unless verified.
+            </p>
+            <div className="mt-6 grid gap-4 md:grid-cols-3">
+              {cityProjectExamples.map((project) => (
+                <Link key={project.id} href={`/projects/${project.id}`}
+                  className="rounded-2xl border border-black/10 bg-neutral-50 p-5 hover:border-yellow-600">
+                  <h3 className="font-bold">{project.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-black/65">{project.summary}</p>
+                  <p className="mt-3 text-sm font-bold text-amber-800">View real project photos →</p>
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -204,13 +236,13 @@ export default async function CityPage({
 
             <div className="mt-5 grid gap-3">
               {services.slice(0, 7).map((service) => (
-                <a
+                <Link
                   key={service.slug}
-                  href={`/handyman/${citySlug}/${service.slug}`}
+                  href={`/services/${service.slug}`}
                   className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 font-semibold text-white hover:border-yellow-400/60"
                 >
                   {service.title} in {city.name} →
-                </a>
+                </Link>
               ))}
             </div>
           </div>

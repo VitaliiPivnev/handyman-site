@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { business } from "../../../data/business";
 import {
   cities,
@@ -24,7 +25,7 @@ export async function generateMetadata({
   params,
 }: {
   params: Promise<{ city: string; service: string }>;
-}) {
+}): Promise<Metadata> {
   const { city, service } = await params;
 
   if (!cities.some((item) => item.slug === city) || !getService(service)) notFound();
@@ -36,6 +37,11 @@ export async function generateMetadata({
     title: `${serviceName} in ${cityName}, FL | Handyman Tampa`,
     description: `Professional ${serviceName.toLowerCase()} in ${cityName}, FL. Fast response, clean work, and free estimates in the Tampa Bay Area.`,
     alternates: { canonical: `/handyman/${city}/${service}` },
+    robots: {
+      index: false,
+      follow: true,
+      googleBot: { index: false, follow: true },
+    },
   };
 }
 
