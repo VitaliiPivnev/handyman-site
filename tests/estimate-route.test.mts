@@ -8,6 +8,7 @@ import {
   markSubmissionDelivered,
   releaseSubmission,
 } from "../app/api/estimate/idempotency.ts";
+import { assessEstimateSpam, scoreEstimateSpam, spamThresholds } from "../app/api/estimate/spam.ts";
 
 const originalFetch = globalThis.fetch;
 const envNames = [
@@ -220,4 +221,145 @@ test("server claims before Telegram and only releases a confirmed delivery failu
   const telegramCatch = source.slice(telegramCall, source.indexOf("if (!(await markSubmissionDelivered", telegramCall));
   assert.match(telegramCatch, /error instanceof ConfirmedTelegramFailure/);
   assert.match(telegramCatch, /await releaseSubmission\(/);
+});
+
+test("obvious SEO and ranking solicitations are blocked by combined signals", () => {
+  const result = scoreEstimateSpam({
+    name: "Michael",
+    email: "sales@example.com",
+    location: "",
+    message: "I came across your website. We offer SEO services and can get your website top Google rankings and more website traffic. Book a call with our team.",
+  });
+  assert.equal(result.action, "block");
+  assert.ok(result.score >= spamThresholds.block);
+  assert.ok(result.reasons.includes("commercial_solicitation"));
+  assert.ok(result.reasons.includes("mass_outreach_template"));
+});
+
+test("AI employee, chatbot, lead database and automated outreach advertising is blocked", () => {
+  const result = scoreEstimateSpam({
+    name: "Business Growth Team",
+    email: "outreach@example.com",
+    location: "Tampa",
+    message: "We offer AI employees and chatbots for lead generation, B2B databases, and automated outreach. Our solution can grow your business.",
+  });
+  assert.equal(result.action, "block");
+  assert.ok(result.reasons.includes("not_handyman_request"));
+});
+
+test("standalone commercial ads block on their first message without a template introduction", () => {
+  const advertisements = [
+    "We provide SEO services to improve your Google rankings.",
+    "We offer lead generation services that can increase your leads.",
+    "Our digital marketing service can increase your website traffic.",
+    "We provide AI employees for your business and offer a free consultation.",
+  ];
+  for (const message of advertisements) {
+    const result = scoreEstimateSpam({
+      name: "Sales Representative",
+      email: "sales@example.com",
+      location: "",
+      message,
+    });
+    assert.equal(result.action, "block", `${message}: ${JSON.stringify(result)}`);
+    assert.ok(result.score >= spamThresholds.block);
+    assert.ok(result.reasons.includes("commercial_solicitation"));
+    assert.ok(result.reasons.includes("not_handyman_request"));
+    assert.ok(result.reasons.includes("high_confidence_unrelated_ad"));
+    assert.ok(!result.reasons.includes("mass_outreach_template"));
+  }
+});
+
+test("known spam domains, HTML and URL names accumulate risk", () => {
+  const result = scoreEstimateSpam({
+    name: "https://myxa.cc/promo",
+    email: "sender@example.com",
+    location: "1",
+    message: "<b>This message came through your contact form</b>. Visit https://myxa.cc for our service.",
+  });
+  assert.equal(result.action, "block");
+  assert.ok(result.reasons.includes("known_spam_domain"));
+  assert.ok(result.reasons.includes("html_in_fields"));
+  assert.ok(result.reasons.includes("url_in_name"));
+});
+
+test("random and placeholder form values are blocked", () => {
+  const result = scoreEstimateSpam({ name: "1", email: "", location: "", message: "asdfghjkl qwerty", });
+  assert.equal(result.action, "block");
+  assert.ok(result.reasons.includes("invalid_name_pattern"));
+  assert.ok(result.reasons.includes("garbage_message"));
+});
+
+test("real ceiling and cabinet handyman requests stay allowed", () => {
+  const normalRequests = [
+    "I need to repair a ceiling damaged by an AC leak. The damaged area is about four feet wide.",
+    "I need help installing kitchen cabinets next week. Here is the product: https://example.com/cabinets",
+    "Can you install a Google Nest doorbell and repair the trim around my front door?",
+    "We need an AI camera mounted outside and a small hole in the drywall patched afterward.",
+  ];
+  for (const message of normalRequests) {
+    const result = scoreEstimateSpam({ name: "Jamie Smith", email: "jamie@example.com", location: "Tampa", message });
+    assert.equal(result.action, "allow", `${message}: ${JSON.stringify(result)}`);
+  }
+});
+
+test("ambiguous commercial wording with a real repair is marked for review, not dropped", () => {
+  const result = scoreEstimateSpam({
+    name: "Chris",
+    email: "chris@example.com",
+    location: "Clearwater",
+    message: "I came across your website and wanted to discuss Google rankings, but I also need help to repair a damaged door at my office.",
+  });
+  assert.equal(result.action, "review");
+  assert.ok(result.score >= spamThresholds.review && result.score < spamThresholds.block);
+});
+
+test("repeated risky message fingerprints raise risk without storing message text", async () => {
+  configureRedis();
+  let count = 0;
+  const bodies: string[] = [];
+  globalThis.fetch = async (_input, init) => {
+    count += 1;
+    bodies.push(String(init?.body));
+    return new Response(JSON.stringify([{ result: count }, { result: count === 1 ? 1 : 0 }, { result: 604800 }]), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  };
+  const input = {
+    name: "Changing Name",
+    email: "changing@example.com",
+    location: "",
+    message: "I am reaching out about digital marketing for your business.",
+  };
+  const first = await assessEstimateSpam(input);
+  const second = await assessEstimateSpam({ ...input, name: "Different Name", email: "other@example.com" });
+  assert.equal(first.repeatCount, 1);
+  assert.equal(second.repeatCount, 2);
+  assert.ok(second.score > first.score);
+  assert.ok(second.reasons.includes("repeated_message_fingerprint"));
+  assert.doesNotMatch(bodies.join(" "), /digital marketing|changing name|example\.com/i);
+});
+
+test("fingerprint storage failure does not silently block an otherwise reviewable lead", async () => {
+  configureRedis();
+  globalThis.fetch = async () => new Response("unavailable", { status: 503 });
+  const result = await assessEstimateSpam({
+    name: "Pat",
+    email: "pat@example.com",
+    location: "Tampa",
+    message: "I am reaching out about digital marketing for your business.",
+  });
+  assert.equal(result.fingerprintStatus, "unavailable");
+  assert.notEqual(result.action, "block");
+});
+
+test("route blocks spam before idempotency and Telegram, while review leads are labeled", async () => {
+  const source = await readFile(new URL("../app/api/estimate/route.ts", import.meta.url), "utf8");
+  const assessCall = source.indexOf("await assessEstimateSpam(");
+  const claimCall = source.indexOf("await claimSubmission(");
+  const telegramCall = source.indexOf('await telegram("sendMessage"');
+  assert.ok(assessCall >= 0 && claimCall > assessCall && telegramCall > claimCall);
+  assert.match(source, /spam\.action === "block"/);
+  assert.match(source, /⚠️ REVIEW — Possible Promotional Lead/);
 });
