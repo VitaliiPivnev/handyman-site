@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import Script from "next/script";
 import LeadAttributionFields from "./LeadAttributionFields";
 
@@ -42,8 +42,51 @@ async function compressImage(file: File): Promise<File> {
 export default function EstimateForm() {
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
   const formStarted = useRef(false);
+  const turnstileContainer = useRef<HTMLDivElement>(null);
+  const turnstileWidgetId = useRef<string | null>(null);
+  const turnstileToken = useRef("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [turnstileScriptReady, setTurnstileScriptReady] = useState(false);
+  const [turnstileReady, setTurnstileReady] = useState(false);
+
+  useEffect(() => {
+    if (!siteKey || !turnstileScriptReady || !turnstileContainer.current || !window.turnstile) return;
+    if (turnstileWidgetId.current) return;
+    turnstileWidgetId.current = window.turnstile.render(turnstileContainer.current, {
+      sitekey: siteKey,
+      theme: "light",
+      "response-field": false,
+      "refresh-expired": "auto",
+      retry: "auto",
+      callback: (token) => {
+        turnstileToken.current = token;
+        setTurnstileReady(true);
+      },
+      "expired-callback": () => {
+        turnstileToken.current = "";
+        setTurnstileReady(false);
+      },
+      "error-callback": () => {
+        turnstileToken.current = "";
+        setTurnstileReady(false);
+        setError("Security verification could not load. Please retry, or call or text us.");
+      },
+    });
+    return () => {
+      if (turnstileWidgetId.current && window.turnstile) {
+        window.turnstile.remove(turnstileWidgetId.current);
+      }
+      turnstileWidgetId.current = null;
+      turnstileToken.current = "";
+    };
+  }, [siteKey, turnstileScriptReady]);
+
+  function resetTurnstile() {
+    turnstileToken.current = "";
+    setTurnstileReady(false);
+    if (turnstileWidgetId.current) window.turnstile?.reset(turnstileWidgetId.current);
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -61,10 +104,20 @@ export default function EstimateForm() {
     try {
       const form = new FormData(formElement);
       form.delete("attachment");
+      form.delete("cf-turnstile-response");
       for (const file of files) {
         const optimized = await compressImage(file);
         form.append("attachment", optimized);
       }
+      // Read the current token only after photo processing. Expired callbacks
+      // clear this ref, preventing stale or previously used tokens from sending.
+      const currentTurnstileToken = turnstileToken.current;
+      if (siteKey && !currentTurnstileToken) {
+        resetTurnstile();
+        setError("Security verification expired or is not ready. Please complete it and submit again.");
+        return;
+      }
+      if (currentTurnstileToken) form.set("cf-turnstile-response", currentTurnstileToken);
       const response = await fetch("/api/estimate", { method: "POST", body: form, redirect: "follow" });
       if (response.ok && response.redirected && new URL(response.url).pathname === "/thanks") {
         window.location.assign(response.url);
@@ -74,8 +127,9 @@ export default function EstimateForm() {
       const doc = new DOMParser().parseFromString(text, "text/html");
       const message = doc.querySelector("main p")?.textContent;
       setError(message || "Could not send the request. Please call or text us instead.");
-      window.turnstile?.reset();
+      resetTurnstile();
     } catch {
+      resetTurnstile();
       setError("We couldn't process your photos or send this form. Please try again without photos, or text us your project details.");
     } finally {
       setSubmitting(false);
@@ -142,8 +196,12 @@ export default function EstimateForm() {
           </div>
           {siteKey && (
             <>
-              <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" strategy="afterInteractive" />
-              <div className="cf-turnstile" data-sitekey={siteKey} data-theme="light" />
+              <Script
+                src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+                strategy="afterInteractive"
+                onReady={() => setTurnstileScriptReady(true)}
+              />
+              <div ref={turnstileContainer} />
             </>
           )}
           {!siteKey && process.env.NODE_ENV === "production" && (
@@ -152,7 +210,7 @@ export default function EstimateForm() {
             </p>
           )}
           {error && <p role="alert" className="rounded-xl bg-red-50 p-4 text-sm font-semibold text-red-800">{error}</p>}
-          <button type="submit" disabled={submitting || (!siteKey && process.env.NODE_ENV === "production")}
+          <button type="submit" disabled={submitting || Boolean(siteKey && !turnstileReady) || (!siteKey && process.env.NODE_ENV === "production")}
             className="w-full rounded-xl bg-neutral-950 px-6 py-4 text-lg font-bold text-white hover:bg-neutral-800 disabled:cursor-wait disabled:opacity-60">
             {submitting ? "Sending your request..." : "Send My Estimate Request"}
           </button>

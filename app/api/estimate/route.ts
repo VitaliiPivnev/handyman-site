@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getClientIp, withinRateLimit } from "./rate-limit";
+import { logTurnstileResult, verifyTurnstile } from "./turnstile";
 
 export const runtime = "nodejs";
 
@@ -20,30 +21,6 @@ function formError(message: string, status = 400) {
     `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Request not sent</title><main style="max-width:600px;margin:10vh auto;padding:24px;font-family:Arial,sans-serif"><h1>Request not sent</h1><p>${message}</p><p><a href="/#estimate">Go back to the estimate form</a></p></main></html>`,
     { status, headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } }
   );
-}
-
-async function verifyTurnstile(token: string, ip: string | null): Promise<boolean> {
-  const secret = process.env.TURNSTILE_SECRET_KEY;
-  const isLiveProduction = process.env.VERCEL_ENV === "production";
-  if (!secret) return !isLiveProduction;
-  if (!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || !token) return false;
-  try {
-    const body = new URLSearchParams({ secret, response: token });
-    if (ip) body.set("remoteip", ip);
-    const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-      method: "POST",
-      body,
-      cache: "no-store",
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!response.ok) return false;
-    const result: { success?: boolean; hostname?: string } = await response.json();
-    // Set TURNSTILE_EXPECTED_HOSTNAME=handymantampa.net after deployment.
-    const expected = process.env.TURNSTILE_EXPECTED_HOSTNAME;
-    return result.success === true && (!expected || result.hostname === expected);
-  } catch {
-    return false;
-  }
 }
 
 async function hasValidImageSignature(file: File): Promise<boolean> {
@@ -113,8 +90,14 @@ export async function POST(request: Request) {
     }
 
     const ip = getClientIp(request);
-    const verified = await verifyTurnstile(String(form.get("cf-turnstile-response") || ""), ip);
-    if (!verified) return formError("Security verification failed. Please return to the form and retry.", 403);
+    const turnstile = await verifyTurnstile(String(form.get("cf-turnstile-response") || ""), ip);
+    logTurnstileResult(turnstile);
+    if (turnstile.outcome === "unavailable") {
+      return formError("Security verification is temporarily unavailable. Please try again, or call or text us.", 503);
+    }
+    if (turnstile.outcome !== "verified") {
+      return formError("Security verification failed. Please return to the form and retry.", 403);
+    }
 
     const rateLimit = await withinRateLimit(ip);
     if (rateLimit.status === "limited") {
