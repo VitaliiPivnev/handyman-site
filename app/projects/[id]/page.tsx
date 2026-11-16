@@ -92,7 +92,7 @@ export default async function ProjectDetailPage({ params }: Params) {
       <section className="bg-neutral-950 px-5 py-16 text-white">
         <div className="mx-auto max-w-4xl text-center">
           <h2 className="text-3xl font-extrabold">Need help with a similar project?</h2>
-          <p className="mx-auto mt-4 max-w-2xl leading-7 text-white/70">Send us pictures of your space and the work you&apos;re considering. We&apos;ll review the scope and let you know if it fits our service offerings. Licensed or permit-required work may need another contractor.</p>
+          <p className="mx-auto mt-4 max-w-2xl leading-7 text-white/70">Send pictures of your space and describe the work you&apos;re considering. We&apos;ll review the visible conditions, project scope and any permit or licensed-trade considerations before discussing the available next steps.</p>
           <div className="mt-7 flex flex-wrap justify-center gap-3">
             <Link href="/#estimate" className="rounded-xl bg-yellow-400 px-6 py-4 font-bold text-black">Request an estimate</Link>
             <Link href={`/services/${project.serviceSlug}`} className="rounded-xl border border-white/30 px-6 py-4 font-bold">Related handyman service</Link>

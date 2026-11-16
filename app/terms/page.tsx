@@ -22,8 +22,8 @@ export default function TermsPage() {
         <h2 className="mt-8 text-2xl font-bold">Accurate information</h2>
         <p className="mt-3 leading-7">Please provide accurate contact and project information. Photos and product links should relate to the work being requested and should not include private information that is unnecessary for the estimate.</p>
 
-        <h2 className="mt-8 text-2xl font-bold">Work outside handyman scope</h2>
-        <p className="mt-3 leading-7">Electrical, structural, roofing, gas, HVAC, permit-required work, and regulated plumbing must be handled by the appropriate licensed professional. A website request does not confirm that a project can be accepted.</p>
+        <h2 className="mt-8 text-2xl font-bold">Licensed and permit-related work</h2>
+        <p className="mt-3 leading-7">Some electrical, structural, roofing, gas, HVAC, plumbing or other regulated projects may require permits or a licensed trade professional. You may still submit project details for an initial scope review, but a website request does not confirm that any work has been accepted.</p>
 
         <h2 className="mt-8 text-2xl font-bold">Website content</h2>
         <p className="mt-3 leading-7">Project photos and written content on this site may not be republished for commercial use without permission. The website is provided for general information and project inquiries.</p>

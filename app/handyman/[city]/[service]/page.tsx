@@ -167,7 +167,7 @@ export default async function Page({
             {[
               ["What affects the estimate?", "The size, existing condition, access, preparation, materials, and finish details all affect the scope."],
               ["Should I send photos before scheduling?", "Yes. Include a wide view, close-ups, and measurements or product information when relevant."],
-              ["What if the project requires licensed work?", "Electrical, structural, permit-required, and other regulated work must be completed by the appropriate licensed contractor."],
+              ["What if I am not sure what the project involves?", "Send a description, photos, measurements and any product links you have. The scope can be reviewed first, including whether part of the project may require a permit or licensed trade work."],
             ].map(([question, answer]) => (
               <details key={question} className="group py-5">
                 <summary className="cursor-pointer list-none font-bold marker:hidden">{question}<span aria-hidden="true" className="float-right text-yellow-700 group-open:rotate-45">+</span></summary>

@@ -259,7 +259,7 @@ export default async function CityPage({
               ["What should I include with my request?", "Send the project location, a short task description, useful photos, and measurements or product links when available."],
               ["Can several small repairs be reviewed together?", "Yes. Number the tasks and include a photo for each one so the full punch list can be reviewed as one request."],
               ["How are materials handled?", "Materials and customer-supplied products are discussed as part of the scope. When materials need to be purchased, that is addressed before the work is scheduled."],
-              ["What work needs a licensed contractor?", "Electrical, structural, roofing, gas, HVAC, permit-required work, and regulated plumbing must be handled by the appropriate licensed professional."],
+              ["Can I ask about a project that may involve a permit or licensed trade?", "Yes. Send the project details and photos for an initial scope review. Some electrical, structural, roofing, gas, HVAC, plumbing or permit-related work may require a licensed trade professional before next steps can be confirmed."],
             ].map(([question, answer]) => (
               <details key={question} className="group py-5">
                 <summary className="cursor-pointer list-none pr-8 text-lg font-bold marker:hidden">
