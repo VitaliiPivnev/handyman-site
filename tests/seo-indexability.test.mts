@@ -1,11 +1,27 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFile } from "node:fs/promises";
+import { readdir } from "node:fs/promises";
 import { cities, cityServiceCities, services } from "../app/data/site.ts";
 import { detailProjects } from "../app/data/projects.ts";
 import { serviceDetails } from "../app/data/service-details.ts";
 
 const readSource = (path: string) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
+
+async function publicContentSource(): Promise<string> {
+  const root = new URL("../app/", import.meta.url);
+  const contents: string[] = [];
+  async function visit(directory: URL) {
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      if (entry.name === "api") continue;
+      const url = new URL(`${entry.name}${entry.isDirectory() ? "/" : ""}`, directory);
+      if (entry.isDirectory()) await visit(url);
+      else if (/\.(?:ts|tsx)$/.test(entry.name)) contents.push(await readFile(url, "utf8"));
+    }
+  }
+  await visit(root);
+  return contents.join("\n");
+}
 
 test("all 187 city-service combinations remain generated but are noindex, follow", async () => {
   assert.equal(cityServiceCities.length, 17);
@@ -93,6 +109,63 @@ test("drywall and fence service hubs contain expanded scope and real portfolio s
   assert.match(source, /Fence & Gate Repair Tampa, FL \| Panels & Hardware/);
   assert.match(source, /Real Drywall & Ceiling Repair Projects/);
   assert.match(source, /Real Fence & Gate Projects/);
+});
+
+test("all service pages have distinct planning copy and visible FAQ data matches schema input", async () => {
+  const planning = new Set<string>();
+  for (const service of services) {
+    const detail = serviceDetails[service.slug];
+    assert.ok(detail?.planning && detail.planning.length >= 120, `${service.slug} needs useful planning copy`);
+    assert.ok(detail.faqs.length >= 3, `${service.slug} needs customer-focused FAQs`);
+    planning.add(detail.planning);
+  }
+  assert.equal(planning.size, services.length);
+  const source = await readSource("app/services/[service]/page.tsx");
+  assert.match(source, /mainEntity: detail\.faqs\.map/);
+  assert.match(source, /detail\.faqs\.map\(\(faq\) =>/);
+  assert.match(source, /<details key={faq\.question}/);
+});
+
+test("public copy avoids known SEO-template and unsupported marketing phrases", async () => {
+  const source = await publicContentSource();
+  const forbidden = [
+    /Why is my door sticking in Tampa/i,
+    /thin (?:page|city-and-service)/i,
+    /city hub/i,
+    /priority service area/i,
+    /main Tampa Bay repair categories/i,
+    /clean, reliable handyman work/i,
+    /fast response/i,
+    /quality results/i,
+    /same-day service/i,
+    /5-star rated/i,
+    /top-rated handyman/i,
+    /guaranteed results/i,
+  ];
+  for (const pattern of forbidden) assert.doesNotMatch(source, pattern);
+});
+
+test("real portfolio inventory and contact details remain intact", async () => {
+  const { projects } = await import("../app/data/projects.ts");
+  assert.equal(projects.length, 33);
+  assert.equal(detailProjects.length, 23);
+  assert.ok(projects.every((project) => project.photos.length > 0));
+  const business = await readSource("app/data/business.ts");
+  assert.match(business, /phone: "\+13054650028"/);
+  const reviews = await readSource("app/components/Reviews.tsx");
+  assert.match(reviews, /thumbtack\.com/);
+  assert.doesNotMatch(reviews, /★★★★★|Average rating|Customer Review/);
+});
+
+test("privacy and terms pages have clear metadata and canonical URLs", async () => {
+  const [privacy, terms] = await Promise.all([
+    readSource("app/privacy/page.tsx"),
+    readSource("app/terms/page.tsx"),
+  ]);
+  assert.match(privacy, /canonical: "\/privacy"/);
+  assert.match(terms, /canonical: "\/terms"/);
+  assert.match(privacy, /Project requests are delivered through Telegram/);
+  assert.match(terms, /Work outside handyman scope/);
 });
 
 test("primary pages retain self-referencing canonical metadata and stay indexable", async () => {

@@ -40,7 +40,7 @@ export default function Home() {
       <BusinessJsonLd />
       <header className="sticky top-0 z-40 border-b border-[#2b2c30] bg-[#0e1013]/95 px-[5vw] py-5 backdrop-blur">
         <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-4">
-          <Link href="/" className="text-[22px] font-extrabold tracking-tight max-[520px]:text-lg">{business.name}</Link>
+          <Link href="/" className="min-w-0 truncate text-[22px] font-extrabold tracking-tight max-[520px]:text-base">{business.name}</Link>
           <nav aria-label="Main menu" className="hidden items-center gap-6 text-sm text-white/75 md:flex">
             <Link href="#services" className="hover:text-white">Services</Link>
             {projects.length > 0 && <Link href="/projects" className="hover:text-white">Projects</Link>}
@@ -48,8 +48,8 @@ export default function Home() {
             <Link href="/guides" className="hover:text-white">Helpful Guides</Link>
           </nav>
           <TrackingLink href="#estimate" eventName="estimate_cta" eventLabel="home_header"
-            className="rounded-[14px] bg-[#ffd43b] px-[23px] py-[13px] text-sm font-extrabold text-[#151515] hover:bg-yellow-300 max-[520px]:px-3 max-[520px]:py-[11px] max-[520px]:text-xs">
-            Request an Estimate
+            className="shrink-0 rounded-[14px] bg-[#ffd43b] px-[23px] py-[13px] text-sm font-extrabold text-[#151515] hover:bg-yellow-300 max-[520px]:px-3 max-[520px]:py-[11px] max-[520px]:text-xs">
+            <span className="max-[420px]:hidden">Request an </span>Estimate
           </TrackingLink>
         </div>
       </header>
@@ -63,8 +63,8 @@ export default function Home() {
               Handyman Services in Tampa, Westchase &amp; Tampa Bay
             </h1>
             <p className="mt-5 max-w-[600px] text-lg leading-[1.75] text-[#bec2ca]">
-              Local handyman help focused near Westchase and ZIP 33626, with service across Tampa Bay.
-              From door repair and drywall to painting, flooring, TV mounting, fence repair and household projects.
+              Serving projects near Westchase and ZIP 33626, with availability across Tampa Bay.
+              Get help with drywall, doors, painting, flooring, TV mounting, fence repairs and practical household projects.
             </p>
             <div className="mt-7 flex flex-col gap-[13px] sm:flex-row">
               <Link href="#estimate" className="rounded-[14px] bg-[#ffd43b] px-[23px] py-[13px] text-center font-extrabold text-[#151515] hover:bg-yellow-300">
@@ -91,7 +91,7 @@ export default function Home() {
         featuredOnly
         limit={6}
         heading="See Our Projects"
-        description="Examples of actual handyman jobs: wood decks, TV accent walls, flooring, pergolas and exterior improvements. No stock or AI-generated project photos."
+        description="Examples of actual handyman jobs, including wood decks, TV accent walls, flooring, pergolas and exterior improvements."
       />
 
       <section className="mx-auto max-w-[1200px] px-[5vw] py-[70px]">
@@ -178,7 +178,7 @@ export default function Home() {
         <div className="mx-auto max-w-7xl">
           <p className="font-semibold text-yellow-400">Where we work</p>
           <h2 className="mt-2 text-3xl font-extrabold md:text-5xl">Serving Tampa Bay Communities</h2>
-          <p className="mt-4 max-w-3xl text-white/70">Priority service starts near Westchase, Citrus Park, Town &apos;n&apos; Country, Oldsmar and Odessa, with availability across Tampa Bay depending on project scope and location.</p>
+          <p className="mt-4 max-w-3xl text-white/70">Westchase, Citrus Park, Town &apos;n&apos; Country, Oldsmar and Odessa are closest to our regular service route. Other Tampa Bay locations depend on the project scope and schedule.</p>
           <div className="mt-9 flex flex-wrap gap-3">
             {cities.map((city) => (
               <Link key={city.slug} href={`/handyman/${city.slug}`}
@@ -201,7 +201,7 @@ export default function Home() {
           </div>
           <div className="mt-8 grid gap-5 md:grid-cols-2">
             {[
-              { title: "Why Interior Doors Stick in Florida", href: "/guides/door-sticking-florida", desc: "Common causes, simple checks, and when a door may need professional adjustment." },
+              { title: "Why Interior Doors Stick in Florida", href: "/guides/door-sticking-florida", desc: "Common causes, simple checks, and signs that a door needs more than a quick adjustment." },
               { title: "How to Photograph a Repair for a Faster Estimate", href: "/guides/how-to-photograph-a-repair", desc: "Get a more useful project estimate with a few well-chosen photos and measurements." },
             ].map((guide) => (
               <Link key={guide.href} href={guide.href} className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/10 hover:ring-amber-500">

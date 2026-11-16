@@ -48,7 +48,7 @@ export default async function ServicePage({ params }: Params) {
   if (!service) notFound();
   const detail = serviceDetails[slug];
   const prioritySeo = priorityServiceSeo[slug];
-  const linkedCities = ["westchase", "citrus-park", "town-n-country", "oldsmar", "odessa", "clearwater", "largo", "st-petersburg"]
+  const linkedCities = ["westchase", "citrus-park", "town-n-country", "oldsmar", "odessa"]
     .map((citySlug) => cities.find((city) => city.slug === citySlug))
     .filter((city): city is (typeof cities)[number] => Boolean(city));
 
@@ -74,9 +74,9 @@ export default async function ServicePage({ params }: Params) {
       ]} />
       <header className="border-b border-white/10 px-5 py-4">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
-          <Link href="/" className="font-extrabold">{business.name}</Link>
+          <Link href="/" className="min-w-0 truncate font-extrabold">{business.name}</Link>
           <TrackingLink href={`tel:${business.phone}`} eventName="click_to_call" eventLabel={`service_${slug}_header`}
-            className="rounded-full bg-yellow-400 px-4 py-2 text-sm font-bold text-black">Call Now</TrackingLink>
+            className="shrink-0 rounded-full bg-yellow-400 px-4 py-2 text-sm font-bold text-black">Call Now</TrackingLink>
         </div>
       </header>
 
@@ -98,7 +98,7 @@ export default async function ServicePage({ params }: Params) {
           <div>
             <p className="font-semibold text-amber-700">How we can help</p>
             <h2 className="mt-2 text-3xl font-extrabold">Common {service.title} Projects</h2>
-            <p className="mt-5 text-lg leading-8 text-neutral-700">{detail.intro}</p>
+            <p className="mt-5 text-lg leading-8 text-neutral-700">{detail.planning}</p>
             <p className="mt-4 rounded-xl bg-amber-50 p-5 text-neutral-800">
               <strong>For a faster estimate:</strong> {detail.estimateTip}
             </p>
@@ -135,26 +135,29 @@ export default async function ServicePage({ params }: Params) {
         description={slug === "drywall-repair" || slug === "fence-repair" ? "Real project photographs from our portfolio. Locations are not assigned unless verified." : undefined}
       />
 
-      <section className="px-5 py-16">
+      <section className="px-5 py-14">
         <div className="mx-auto max-w-4xl">
           <p className="font-semibold text-yellow-400">Helpful answers</p>
           <h2 className="mt-2 text-3xl font-extrabold">Frequently Asked Questions</h2>
-          <div className="mt-8 space-y-4">
+          <div className="mt-7 divide-y divide-white/10 rounded-2xl border border-white/15 bg-white/5 px-5 md:px-6">
             {detail.faqs.map((faq) => (
-              <div key={faq.question} className="rounded-2xl border border-white/15 bg-white/5 p-6">
-                <h3 className="text-lg font-bold">{faq.question}</h3>
-                <p className="mt-2 leading-7 text-white/75">{faq.answer}</p>
-              </div>
+              <details key={faq.question} className="group py-5">
+                <summary className="cursor-pointer list-none pr-8 text-lg font-bold marker:hidden">
+                  {faq.question}<span aria-hidden="true" className="float-right text-yellow-400 group-open:rotate-45">+</span>
+                </summary>
+                <p className="mt-3 max-w-3xl leading-7 text-white/75">{faq.answer}</p>
+              </details>
             ))}
           </div>
-          <div className="mt-8 text-sm text-white/60">
-            <p>Explore our main handyman service-area pages:</p>
-            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2">
+          <div className="mt-8 rounded-2xl border border-white/10 px-5 py-4 text-sm text-white/65">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <span className="font-semibold text-white">Nearby service areas</span>
               {linkedCities.map((city) => (
-                <Link key={city.slug} className="underline underline-offset-4" href={`/handyman/${city.slug}`}>
-                  Handyman in {city.name}
+                <Link key={city.slug} className="underline decoration-white/30 underline-offset-4 hover:text-white" href={`/handyman/${city.slug}`}>
+                  {city.name}
                 </Link>
               ))}
+              <Link href="/#areas" className="font-semibold text-yellow-300 underline underline-offset-4">All areas</Link>
             </div>
           </div>
         </div>

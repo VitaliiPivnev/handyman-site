@@ -5,7 +5,7 @@ import Portfolio from "../components/Portfolio";
 
 export const metadata: Metadata = {
   title: "Real Handyman Projects & Before-After Photos | Tampa Bay",
-  description: "Browse real photos of decks, pergolas, LVP flooring, drywall repairs, fence work, TV mounting and home improvements from Tampa Bay handyman jobs.",
+  description: "Browse real photos of decks, pergolas, LVP flooring, drywall repairs, fence work, TV mounting and other completed handyman projects.",
   alternates: { canonical: "/projects" },
   openGraph: { title: "Real Handyman Work | Project Gallery", description: "Photos from actual handyman projects, with before-and-after examples where available.", url: "/projects" },
 };
@@ -23,8 +23,8 @@ export default function ProjectsPage() {
         <p className="font-semibold text-yellow-300">Portfolio</p>
         <h1 className="mt-3 max-w-4xl text-4xl font-extrabold md:text-6xl">Real Projects. Real Work.</h1>
         <p className="mt-5 max-w-3xl text-lg leading-8 text-white/75">
-          Every photo in this portfolio comes from an actual submitted work photo, never an AI-generated renovation.
-          Some projects have a full before-and-after sequence, while others show the completed installation.
+          Every photo in this portfolio shows actual completed or in-progress work.
+          Some projects include a full before-and-after sequence, while others show the finished installation.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           {projectCategories.map((category) => (

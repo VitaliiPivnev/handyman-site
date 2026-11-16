@@ -46,15 +46,15 @@ export default async function CityPage({
     <main className="min-h-screen bg-neutral-950 text-white">
       <header className="sticky top-0 z-50 border-b border-white/10 bg-neutral-950/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
-          <Link href="/" className="flex items-center gap-3 hover:opacity-90 transition">
+          <Link href="/" className="flex min-w-0 items-center gap-3 transition hover:opacity-90">
             <Image
               src="/logo.png"
               alt="Tampa Handyman"
               width={54}
               height={36}
-              className="h-9 w-auto object-contain"
+              className="hidden h-9 w-auto shrink-0 object-contain min-[430px]:block"
             />
-            <span className="text-lg md:text-xl font-extrabold tracking-wide text-white">
+            <span className="truncate text-base font-extrabold tracking-wide text-white md:text-xl">
               {business.name}
             </span>
           </Link>
@@ -73,7 +73,7 @@ export default async function CityPage({
 
           <a
             href={`tel:${business.phone}`}
-            className="rounded-full bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-300 transition"
+            className="ml-3 shrink-0 rounded-full bg-yellow-400 px-4 py-2 text-sm font-semibold text-black transition hover:bg-yellow-300"
           >
             Call Now
           </a>
@@ -142,7 +142,7 @@ export default async function CityPage({
                   </h3>
 
                   <p className="mt-2 text-sm leading-6 text-white/85">
-                    {service.description} Serving {city.name} and nearby areas.
+                    {service.description}
                   </p>
 
                   <p className="mt-4 text-sm font-bold text-yellow-400">
@@ -164,7 +164,7 @@ export default async function CityPage({
               </Link>
             </div>
             <p className="mt-3 max-w-3xl text-black/65">
-              These are examples of completed work from our portfolio. Project locations are not assigned to this city unless verified.
+              Browse real project photos to see the type of work, finish details, and progress views available in our portfolio.
             </p>
             <div className="mt-6 grid gap-4 md:grid-cols-3">
               {cityProjectExamples.map((project) => (
@@ -180,26 +180,26 @@ export default async function CityPage({
         </div>
       </section>
 
-      <section className="px-5 py-16">
+      <section className="px-5 py-12">
         <div className="mx-auto grid max-w-7xl gap-6 md:grid-cols-3">
           <div className="rounded-2xl bg-white/10 p-6">
-            <h3 className="text-xl font-bold">Project-Based Pricing</h3>
+            <h3 className="text-xl font-bold">Start with the Scope</h3>
             <p className="mt-3 text-white/65">
-              Clear pricing for the project instead of confusing hourly work.
+              Photos, measurements, and product details help define what the project includes.
             </p>
           </div>
 
           <div className="rounded-2xl bg-white/10 p-6">
-            <h3 className="text-xl font-bold">Clean Work</h3>
+            <h3 className="text-xl font-bold">Review the Estimate</h3>
             <p className="mt-3 text-white/65">
-              We respect your home and keep the work area clean.
+              The project scope and any separately supplied materials are discussed before scheduling.
             </p>
           </div>
 
           <div className="rounded-2xl bg-white/10 p-6">
-            <h3 className="text-xl font-bold">Fast Communication</h3>
+            <h3 className="text-xl font-bold">Confirm the Next Step</h3>
             <p className="mt-3 text-white/65">
-              Send photos and project details for a quick estimate.
+              If the work is a good fit, timing and access details can be confirmed directly.
             </p>
           </div>
         </div>
@@ -212,7 +212,7 @@ export default async function CityPage({
               Local handyman help
             </p>
             <h2 className="mt-2 text-3xl font-extrabold md:text-5xl">
-              Reliable Handyman in {city.name}, FL
+              Planning a Project in {city.name}?
             </h2>
 
             <p className="mt-6 leading-8 text-white/75">
@@ -241,7 +241,7 @@ export default async function CityPage({
                   href={`/services/${service.slug}`}
                   className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 font-semibold text-white hover:border-yellow-400/60"
                 >
-                  {service.title} in {city.name} →
+                  {service.title} <span className="text-white/60">— view details</span>
                 </Link>
               ))}
             </div>
@@ -249,47 +249,25 @@ export default async function CityPage({
         </div>
       </section>
 
-      <section className="bg-white px-5 py-16 text-black">
-        <div className="mx-auto max-w-7xl">
+      <section className="bg-white px-5 py-14 text-black">
+        <div className="mx-auto max-w-4xl">
           <p className="font-semibold text-yellow-600">FAQ</p>
-          <h2 className="mt-2 text-3xl font-extrabold md:text-5xl">
-            Handyman Questions in {city.name}
-          </h2>
+          <h2 className="mt-2 text-3xl font-extrabold md:text-4xl">Before You Request an Estimate</h2>
 
-          <div className="mt-10 grid gap-5 md:grid-cols-2">
-            <div className="rounded-2xl border border-black/10 bg-neutral-50 p-6">
-              <h3 className="text-xl font-bold">
-                Do you offer free estimates?
-              </h3>
-              <p className="mt-3 text-black/65">
-                Yes. Send photos and project details, and we can usually provide
-                a quick estimate or schedule an in-person look if needed.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-black/10 bg-neutral-50 p-6">
-              <h3 className="text-xl font-bold">Do you work hourly?</h3>
-              <p className="mt-3 text-black/65">
-                Most jobs are priced by project so you know the cost before work
-                begins. Materials are separate when needed.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-black/10 bg-neutral-50 p-6">
-              <h3 className="text-xl font-bold">What areas do you serve?</h3>
-              <p className="mt-3 text-black/65">
-                We serve {city.name} and nearby Tampa Bay communities including
-                Westchase, Citrus Park, Oldsmar, Odessa, Clearwater, and more.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-black/10 bg-neutral-50 p-6">
-              <h3 className="text-xl font-bold">Can I send photos first?</h3>
-              <p className="mt-3 text-black/65">
-                Yes. Photos help us understand the scope faster and prepare a
-                more accurate estimate.
-              </p>
-            </div>
+          <div className="mt-8 divide-y divide-black/10 rounded-2xl border border-black/10 px-5 md:px-6">
+            {[
+              ["What should I include with my request?", "Send the project location, a short task description, useful photos, and measurements or product links when available."],
+              ["Can several small repairs be reviewed together?", "Yes. Number the tasks and include a photo for each one so the full punch list can be reviewed as one request."],
+              ["How are materials handled?", "Materials and customer-supplied products are discussed as part of the scope. When materials need to be purchased, that is addressed before the work is scheduled."],
+              ["What work needs a licensed contractor?", "Electrical, structural, roofing, gas, HVAC, permit-required work, and regulated plumbing must be handled by the appropriate licensed professional."],
+            ].map(([question, answer]) => (
+              <details key={question} className="group py-5">
+                <summary className="cursor-pointer list-none pr-8 text-lg font-bold marker:hidden">
+                  {question}<span aria-hidden="true" className="float-right text-amber-700 group-open:rotate-45">+</span>
+                </summary>
+                <p className="mt-3 leading-7 text-black/65">{answer}</p>
+              </details>
+            ))}
           </div>
         </div>
       </section>

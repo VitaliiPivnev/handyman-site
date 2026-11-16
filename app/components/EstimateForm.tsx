@@ -137,7 +137,7 @@ export default function EstimateForm() {
         <p className="font-semibold text-amber-700">Free project estimate</p>
         <h2 className="mt-2 text-3xl font-extrabold md:text-5xl">Tell Us About Your Project</h2>
         <p className="mt-4 text-black/70">
-          A short description and a few photos help us give you accurate project-based pricing.
+          A short description and a few photos help us understand the scope and prepare a project estimate.
           Materials, when needed, are quoted separately.
         </p>
         <form ref={formRef} action="/api/estimate" method="POST" encType="multipart/form-data" onSubmit={handleSubmit}
