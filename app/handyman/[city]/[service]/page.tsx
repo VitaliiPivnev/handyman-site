@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { business } from "../../../data/business";
 import {
-  cities,
+  cityServiceCities,
   getCityName,
   getService,
   getServiceName,
@@ -13,7 +13,7 @@ import {
 import EstimateForm from "../../../components/EstimateForm";
 
 export function generateStaticParams() {
-  return cities.flatMap((city) =>
+  return cityServiceCities.flatMap((city) =>
     services.map((service) => ({
       city: city.slug,
       service: service.slug,
@@ -28,7 +28,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { city, service } = await params;
 
-  if (!cities.some((item) => item.slug === city) || !getService(service)) notFound();
+  if (!cityServiceCities.some((item) => item.slug === city) || !getService(service)) notFound();
 
   const cityName = getCityName(city);
   const serviceName = getServiceName(service);
@@ -55,7 +55,7 @@ export default async function Page({
   const cityName = getCityName(city);
   const serviceName = getServiceName(service);
   const serviceData = getService(service);
-  if (!cities.some((item) => item.slug === city) || !serviceData) notFound();
+  if (!cityServiceCities.some((item) => item.slug === city) || !serviceData) notFound();
   const includes = serviceData?.includes || [
     "Home repair and installation",
     "Clean and professional work",

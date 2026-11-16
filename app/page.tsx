@@ -11,12 +11,12 @@ import TrackingLink from "./components/TrackingLink";
 import BusinessJsonLd from "./components/BusinessJsonLd";
 
 export const metadata: Metadata = {
-  title: "Handyman in Tampa Bay, FL | Doors, Drywall, Painting & More",
+  title: "Handyman Tampa, FL | Home Repair in Tampa Bay",
   description:
-    "Local handyman in Tampa Bay for door repair, drywall, interior painting, LVP flooring, TV mounting and home maintenance. Request a clear project-based estimate.",
+    "Handyman services in Tampa Bay near Westchase and ZIP 33626. Drywall, doors, painting, flooring, mounting, fence repair and home projects. Send photos for an estimate.",
   alternates: { canonical: "/" },
   openGraph: {
-    title: "Handyman in Tampa Bay | Handyman Tampa",
+    title: "Handyman Tampa, Westchase & Tampa Bay",
     description: "Home repairs, installation, painting and flooring. Send project photos for a free estimate.",
     url: "/",
     type: "website",
@@ -60,11 +60,11 @@ export default function Home() {
               Tampa Bay • Home repairs & improvements
             </p>
             <h1 className="mt-[15px] max-w-4xl text-[clamp(42px,5vw,69px)] font-extrabold leading-[1.06] tracking-[-0.06em]">
-              Handyman Services in Tampa Bay, Florida
+              Handyman Services in Tampa, Westchase &amp; Tampa Bay
             </h1>
             <p className="mt-5 max-w-[600px] text-lg leading-[1.75] text-[#bec2ca]">
-              From door repair and drywall to painting, vinyl plank flooring, TV mounting and outdoor projects.
-              Real work, clear communication and project-based estimates.
+              Local handyman help focused near Westchase and ZIP 33626, with service across Tampa Bay.
+              From door repair and drywall to painting, flooring, TV mounting, fence repair and household projects.
             </p>
             <div className="mt-7 flex flex-col gap-[13px] sm:flex-row">
               <Link href="#estimate" className="rounded-[14px] bg-[#ffd43b] px-[23px] py-[13px] text-center font-extrabold text-[#151515] hover:bg-yellow-300">
@@ -128,8 +128,14 @@ export default function Home() {
           <p className="font-semibold text-amber-700">Local handyman services</p>
           <h2 className="mt-2 text-3xl font-extrabold md:text-5xl">What Can We Help You Fix?</h2>
           <p className="mt-4 max-w-3xl text-lg text-neutral-700">
-            Select your project for details about typical repairs, what to photograph, and how to get an estimate.
+            Select your project for useful scope details, real work examples, what to photograph, and how to request an estimate.
           </p>
+          <div className="mt-5 flex flex-wrap gap-3 text-sm font-bold">
+            {["drywall-repair", "fence-repair", "door-repair", "general-handyman-services"].map((slug) => {
+              const service = services.find((item) => item.slug === slug)!;
+              return <Link key={slug} href={`/services/${slug}`} className="rounded-full border border-amber-700/30 px-4 py-2 text-amber-900 hover:border-amber-700">{service.title}</Link>;
+            })}
+          </div>
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {services.map((service, index) => (
               <Link key={service.slug} href={`/services/${service.slug}`}
@@ -172,7 +178,7 @@ export default function Home() {
         <div className="mx-auto max-w-7xl">
           <p className="font-semibold text-yellow-400">Where we work</p>
           <h2 className="mt-2 text-3xl font-extrabold md:text-5xl">Serving Tampa Bay Communities</h2>
-          <p className="mt-4 max-w-2xl text-white/70">Based in the Tampa Bay area and serving surrounding neighborhoods. Availability depends on your project and location.</p>
+          <p className="mt-4 max-w-3xl text-white/70">Priority service starts near Westchase, Citrus Park, Town &apos;n&apos; Country, Oldsmar and Odessa, with availability across Tampa Bay depending on project scope and location.</p>
           <div className="mt-9 flex flex-wrap gap-3">
             {cities.map((city) => (
               <Link key={city.slug} href={`/handyman/${city.slug}`}

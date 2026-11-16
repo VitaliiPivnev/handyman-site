@@ -22,8 +22,8 @@ export async function generateMetadata({
   const cityFormatted = getCityName(city);
 
   return {
-    title: `Handyman in ${cityFormatted}, FL | Handyman Tampa`,
-    description: `Reliable handyman services in ${cityFormatted}, FL. Doors, drywall, painting, flooring and more. Call for a free estimate.`,
+    title: cities.find((item) => item.slug === city)?.seoTitle || `Handyman in ${cityFormatted}, FL | Handyman Tampa`,
+    description: cities.find((item) => item.slug === city)?.metaDescription || `Reliable handyman services in ${cityFormatted}, FL. Doors, drywall, painting, flooring and more. Call for a free estimate.`,
     alternates: { canonical: `/handyman/${city}` },
   };
 }
@@ -216,17 +216,17 @@ export default async function CityPage({
             </h2>
 
             <p className="mt-6 leading-8 text-white/75">
-              If you need a dependable handyman in {city.name}, we can help with
-              home repairs, installations, drywall, doors, painting, flooring,
-              TV mounting, furniture assembly, and other small-to-medium
-              projects.
+              {city.localIntro || `If you need a dependable handyman in ${city.name}, we can help with home repairs, installations, drywall, doors, painting, flooring, TV mounting, furniture assembly, and other small-to-medium projects.`}
             </p>
 
             <p className="mt-4 leading-8 text-white/75">
-              Send photos of the project, describe what needs to be done, and we
-              will help you understand the best next step. We serve homeowners
-              across {city.name} and the surrounding Tampa Bay area.
+              {city.estimateAdvice || `Send photos of the project, describe what needs to be done, and we will help you understand the best next step. We serve homeowners across ${city.name} and the surrounding Tampa Bay area.`}
             </p>
+            {city.serviceFocus && (
+              <ul className="mt-6 grid gap-3 text-white/80 sm:grid-cols-2">
+                {city.serviceFocus.map((item) => <li key={item}>✓ {item}</li>)}
+              </ul>
+            )}
           </div>
 
           <div className="rounded-3xl border border-white/10 bg-white/10 p-6">
@@ -279,7 +279,7 @@ export default async function CityPage({
               <h3 className="text-xl font-bold">What areas do you serve?</h3>
               <p className="mt-3 text-black/65">
                 We serve {city.name} and nearby Tampa Bay communities including
-                Tampa, Clearwater, St. Petersburg, Brandon, Riverview, and more.
+                Westchase, Citrus Park, Oldsmar, Odessa, Clearwater, and more.
               </p>
             </div>
 

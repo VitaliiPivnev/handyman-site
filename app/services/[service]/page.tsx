@@ -12,6 +12,19 @@ import { baseUrl } from "../../data/site";
 
 type Params = { params: Promise<{ service: string }> };
 
+const priorityServiceSeo: Record<string, { title: string; description: string; heading: string }> = {
+  "drywall-repair": {
+    title: "Drywall Repair Tampa, FL | Walls & Ceilings",
+    description: "Drywall repair in Tampa Bay for wall and ceiling holes, cracks, surface preparation and texture blending. View real projects and send photos for an estimate.",
+    heading: "Drywall Repair in Tampa & Tampa Bay",
+  },
+  "fence-repair": {
+    title: "Fence & Gate Repair Tampa, FL | Panels & Hardware",
+    description: "Fence and gate repair in Tampa Bay for suitable panels, pickets, hinges, latches and minor wood repairs. View real work and request an estimate.",
+    heading: "Fence & Gate Repair in Tampa Bay",
+  },
+};
+
 export function generateStaticParams() {
   return services.map((service) => ({ service: service.slug }));
 }
@@ -20,9 +33,10 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { service: slug } = await params;
   const service = getService(slug);
   if (!service) notFound();
+  const prioritySeo = priorityServiceSeo[slug];
   return {
-    title: `${service.title} in Tampa Bay, FL | Handyman Tampa`,
-    description: serviceDetails[slug]?.intro.slice(0, 155) || service.description,
+    title: prioritySeo?.title || `${service.title} in Tampa Bay, FL | Handyman Tampa`,
+    description: prioritySeo?.description || serviceDetails[slug]?.intro.slice(0, 155) || service.description,
     alternates: { canonical: `/services/${slug}` },
     openGraph: { title: `${service.title} in Tampa Bay`, description: service.description, url: `/services/${slug}` },
   };
@@ -33,7 +47,8 @@ export default async function ServicePage({ params }: Params) {
   const service = getService(slug);
   if (!service) notFound();
   const detail = serviceDetails[slug];
-  const linkedCities = ["tampa", "riverview", "lutz", "clearwater", "st-petersburg", "brandon"]
+  const prioritySeo = priorityServiceSeo[slug];
+  const linkedCities = ["westchase", "citrus-park", "town-n-country", "oldsmar", "odessa", "clearwater", "largo", "st-petersburg"]
     .map((citySlug) => cities.find((city) => city.slug === citySlug))
     .filter((city): city is (typeof cities)[number] => Boolean(city));
 
@@ -67,7 +82,7 @@ export default async function ServicePage({ params }: Params) {
 
       <section className="mx-auto max-w-7xl px-5 py-16 md:py-24">
         <p className="font-semibold text-yellow-400">Handyman Services • Tampa Bay</p>
-        <h1 className="mt-3 max-w-4xl text-4xl font-extrabold leading-tight md:text-6xl">{service.title} in Tampa Bay, FL</h1>
+        <h1 className="mt-3 max-w-4xl text-4xl font-extrabold leading-tight md:text-6xl">{prioritySeo?.heading || `${service.title} in Tampa Bay, FL`}</h1>
         <p className="mt-6 max-w-3xl text-lg leading-8 text-white/75">{detail.intro}</p>
         <div className="mt-8 flex flex-wrap gap-3">
           <TrackingLink href={`tel:${business.phone}`} eventName="click_to_call" eventLabel={`service_${slug}_hero`}
@@ -98,7 +113,27 @@ export default async function ServicePage({ params }: Params) {
         </div>
       </section>
 
-      <Portfolio serviceSlug={slug} limit={6} />
+      {detail.scopeDetails && (
+        <section className="bg-neutral-100 px-5 py-14 text-neutral-950">
+          <div className="mx-auto max-w-7xl">
+            <p className="font-semibold text-amber-700">Plan the right repair</p>
+            <h2 className="mt-2 text-3xl font-extrabold">What Helps Define the Project Scope</h2>
+            <div className="mt-8 grid gap-5 md:grid-cols-3">
+              {detail.scopeDetails.map((item) => (
+                <div key={item.title} className="rounded-2xl border border-neutral-200 bg-white p-6">
+                  <h3 className="text-xl font-bold">{item.title}</h3>
+                  <p className="mt-3 leading-7 text-neutral-700">{item.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      <Portfolio serviceSlug={slug} limit={6}
+        heading={slug === "drywall-repair" ? "Real Drywall & Ceiling Repair Projects" : slug === "fence-repair" ? "Real Fence & Gate Projects" : undefined}
+        description={slug === "drywall-repair" || slug === "fence-repair" ? "Real project photographs from our portfolio. Locations are not assigned unless verified." : undefined}
+      />
 
       <section className="px-5 py-16">
         <div className="mx-auto max-w-4xl">

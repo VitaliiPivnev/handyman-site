@@ -4,6 +4,7 @@ export type ServiceDetail = {
   whatWeDo: string[];
   estimateTip: string;
   faqs: Faq[];
+  scopeDetails?: { title: string; text: string }[];
 };
 
 export const serviceDetails: Record<string, ServiceDetail> = {
@@ -18,13 +19,19 @@ export const serviceDetails: Record<string, ServiceDetail> = {
     ],
   },
   "drywall-repair": {
-    intro: "Holes from removed fixtures, dents, and everyday wall damage don't always call for a major renovation. We handle suitable drywall patches, surface preparation, and texture blending.",
-    whatWeDo: ["Patch small-to-medium holes", "Repair minor wall cracks", "Prepare surfaces for repainting", "Blend common wall textures where feasible"],
+    intro: "Drywall damage can come from removed fixtures, access openings, impacts, moisture after the source is resolved, or everyday wear. We handle suitable wall and ceiling patches, surface preparation and texture blending across Tampa Bay.",
+    whatWeDo: ["Patch small-to-medium wall and ceiling holes", "Repair suitable cracks and damaged drywall edges", "Prepare repaired surfaces for primer and paint", "Blend common wall and ceiling textures where feasible"],
     estimateTip: "Include one close-up photo and one wider photo showing the damaged wall and nearby texture.",
+    scopeDetails: [
+      { title: "Wall and ceiling openings", text: "Photos should show the opening, nearby framing or fixtures, surrounding texture and approximate dimensions." },
+      { title: "Texture and paint finish", text: "A close texture match may be possible, but lighting, existing coatings and previous repairs affect the final appearance." },
+      { title: "Water-related damage", text: "The leak or moisture source must be resolved before cosmetic drywall repair. Mold remediation requires the appropriate specialist." },
+    ],
     faqs: [
       { question: "Can patched drywall match the old texture?", answer: "We can often get a close match. Exact results depend on the original material, texture, lighting, and paint sheen." },
       { question: "Can you fix drywall after a TV mount is removed?", answer: "Yes, many small wall patches and finish repairs are suitable handyman projects." },
       { question: "Do you handle mold damage?", answer: "Mold remediation and unresolved water-damage conditions require the appropriate specialist before cosmetic repairs." },
+      { question: "Can you patch a ceiling opening after plumbing or fixture access?", answer: "Many suitable access openings can be patched after the underlying licensed work and any moisture issue are complete. Send a wide photo, close-up and dimensions for review." },
     ],
   },
   "interior-painting": {
@@ -78,13 +85,19 @@ export const serviceDetails: Record<string, ServiceDetail> = {
     ],
   },
   "fence-repair": {
-    intro: "Weather and regular use can loosen fence panels and make gates sag or drag. We handle appropriate non-structural fence and gate repairs.",
-    whatWeDo: ["Adjust sagging gates and latches", "Repair or replace damaged fence panels", "Replace suitable hinges and hardware", "Discuss minor fence repairs and maintenance"],
+    intro: "Weather and regular use can loosen fence pickets, panels and gate hardware. We handle clearly scoped, non-structural fence and gate repairs across Tampa Bay when the work does not require permitted construction.",
+    whatWeDo: ["Adjust suitable sagging gates and latches", "Repair or replace damaged pickets and fence sections", "Replace suitable hinges, fasteners and gate hardware", "Review minor wood fence maintenance and finish repairs"],
     estimateTip: "Share wide and close-up photos, approximate panel dimensions, and whether the post itself is damaged.",
+    scopeDetails: [
+      { title: "Fence sections and pickets", text: "Wide photos help show how much of the fence is affected; close-ups show rot, splits, fasteners and framing condition." },
+      { title: "Gate alignment and hardware", text: "Include the hinges, latch, gate frame and the point where the gate drags or no longer closes correctly." },
+      { title: "Scope and permitting", text: "New fence construction, structural work and projects requiring permits must be handled under the appropriate local requirements." },
+    ],
     faqs: [
       { question: "Can a sagging gate be repaired?", answer: "Sometimes hinges, bracing, or latch adjustments are sufficient. A damaged post or frame may change the repair plan." },
       { question: "Do you repair wood fences?", answer: "Yes, suitable repairs to wood panels and gates can be quoted from photos and measurements." },
       { question: "Do you handle permitted fence construction?", answer: "Projects requiring permits or a licensed contractor are outside our handyman scope." },
+      { question: "What photos are needed for a fence repair estimate?", answer: "Send the full fence or gate, both sides where accessible, close-ups of damaged wood or hardware, approximate dimensions and photos of any affected post." },
     ],
   },
   "general-handyman-services": {
