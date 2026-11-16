@@ -65,7 +65,7 @@ export function scoreEstimateSpam(input: SpamInput): Omit<SpamAssessment, "repea
   ]);
   const solicitation = containsAny(message, [
     /\b(?:we|i) (?:offer|provide|speciali[sz]e|can help|can get|would like to offer)\b/,
-    /grow your business|increase your (?:sales|traffic|leads)|book (?:a )?(?:call|meeting)/,
+    /grow your business|increase your (?:website )?(?:sales|traffic|leads)|book (?:a )?(?:call|meeting)/,
     /guaranteed results?|free (?:audit|consultation|proposal)|our (?:service|team|solution)/,
   ]);
   const templateIntro = containsAny(message, [
@@ -104,6 +104,13 @@ export function scoreEstimateSpam(input: SpamInput): Omit<SpamAssessment, "repea
   if ((commercialTopic || solicitation) && !handymanIntent) {
     score += 2;
     reasons.push("not_handyman_request");
+  }
+  if (commercialTopic && solicitation && !handymanIntent) {
+    // A recognized marketing/automation offer plus an explicit sales pitch,
+    // with no actual repair or installation request, is high-confidence spam
+    // even when it omits a familiar mass-mail introduction.
+    score += 1;
+    reasons.push("high_confidence_unrelated_ad");
   }
   if (handymanIntent) {
     // A real project strongly lowers risk, but a mass-outreach introduction

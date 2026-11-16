@@ -247,6 +247,29 @@ test("AI employee, chatbot, lead database and automated outreach advertising is 
   assert.ok(result.reasons.includes("not_handyman_request"));
 });
 
+test("standalone commercial ads block on their first message without a template introduction", () => {
+  const advertisements = [
+    "We provide SEO services to improve your Google rankings.",
+    "We offer lead generation services that can increase your leads.",
+    "Our digital marketing service can increase your website traffic.",
+    "We provide AI employees for your business and offer a free consultation.",
+  ];
+  for (const message of advertisements) {
+    const result = scoreEstimateSpam({
+      name: "Sales Representative",
+      email: "sales@example.com",
+      location: "",
+      message,
+    });
+    assert.equal(result.action, "block", `${message}: ${JSON.stringify(result)}`);
+    assert.ok(result.score >= spamThresholds.block);
+    assert.ok(result.reasons.includes("commercial_solicitation"));
+    assert.ok(result.reasons.includes("not_handyman_request"));
+    assert.ok(result.reasons.includes("high_confidence_unrelated_ad"));
+    assert.ok(!result.reasons.includes("mass_outreach_template"));
+  }
+});
+
 test("known spam domains, HTML and URL names accumulate risk", () => {
   const result = scoreEstimateSpam({
     name: "https://myxa.cc/promo",
