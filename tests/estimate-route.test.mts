@@ -2,6 +2,12 @@ import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
 import { readFile } from "node:fs/promises";
 import { getClientIp, withinRateLimit } from "../app/api/estimate/rate-limit.ts";
+import {
+  claimSubmission,
+  isValidSubmissionId,
+  markSubmissionDelivered,
+  releaseSubmission,
+} from "../app/api/estimate/idempotency.ts";
 
 const originalFetch = globalThis.fetch;
 const envNames = [
@@ -115,4 +121,103 @@ test("route invokes Turnstile before rate limiting", async () => {
   const rateLimitCall = source.indexOf("await withinRateLimit(");
   assert.ok(verifyCall >= 0, "Turnstile call must exist");
   assert.ok(rateLimitCall > verifyCall, "rate limiter must run after Turnstile");
+});
+
+test("submission IDs require a UUID v4 and independent IDs remain independent", () => {
+  assert.equal(isValidSubmissionId("c7b190b5-bdc8-4ab8-a903-f8c80b3ad135"), true);
+  assert.equal(isValidSubmissionId("c7b190b5-bdc8-1ab8-a903-f8c80b3ad135"), false);
+  assert.equal(isValidSubmissionId("not-a-submission-id"), false);
+});
+
+test("parallel double POST atomically acquires only one delivery lock", async () => {
+  configureRedis();
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls += 1;
+    return new Response(JSON.stringify([{ result: calls === 1 ? 1 : 0 }]), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  };
+
+  const submissionId = "c7b190b5-bdc8-4ab8-a903-f8c80b3ad135";
+  const [first, second] = await Promise.all([
+    claimSubmission(submissionId),
+    claimSubmission(submissionId),
+  ]);
+  assert.equal(first.status, "acquired");
+  assert.equal(second.status, "processing");
+  assert.equal(calls, 2);
+});
+
+test("repeat POST after successful delivery is acknowledged without a new lock", async () => {
+  configureRedis();
+  globalThis.fetch = async () => new Response(JSON.stringify([{ result: 2 }]), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+  assert.deepEqual(await claimSubmission("c7b190b5-bdc8-4ab8-a903-f8c80b3ad135"), {
+    status: "delivered",
+  });
+});
+
+test("delivery can be finalized and failed delivery can release its exact lock", async () => {
+  configureRedis();
+  const requests: string[] = [];
+  globalThis.fetch = async (_input, init) => {
+    requests.push(String(init?.body));
+    return new Response(JSON.stringify([{ result: 1 }]), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  };
+  const submissionId = "c7b190b5-bdc8-4ab8-a903-f8c80b3ad135";
+  assert.equal(await markSubmissionDelivered(submissionId, "processing:test-lock"), true);
+  assert.equal(await releaseSubmission(submissionId, "processing:test-lock"), true);
+  assert.match(requests[0], /delivered/);
+  assert.match(requests[1], /DEL/);
+});
+
+test("Redis idempotency errors fail closed instead of allowing duplicate Telegram delivery", async () => {
+  configureRedis();
+  globalThis.fetch = async () => new Response(JSON.stringify([{ error: "ERR unavailable" }]), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+  assert.deepEqual(await claimSubmission("c7b190b5-bdc8-4ab8-a903-f8c80b3ad135"), {
+    status: "unavailable",
+    reason: "idempotency_claim_failed",
+  });
+});
+
+test("client clears only confirmed success, handles BFCache Back, and blocks double clicks", async () => {
+  const source = await readFile(new URL("../app/components/EstimateForm.tsx", import.meta.url), "utf8");
+  assert.match(source, /response\.ok && response\.redirected/);
+  assert.match(source, /sessionStorage\.setItem\(CLEAR_AFTER_SUCCESS_KEY/);
+  assert.match(source, /clearEstimateForm\(\);\s*window\.location\.assign/);
+  assert.match(source, /addEventListener\("pageshow", handlePageShow\)/);
+  assert.match(source, /requestAnimationFrame\(clear\)/);
+  assert.match(source, /window\.setTimeout\(clear, 100\)/);
+  assert.match(source, /if \(submittingRef\.current\) return/);
+  assert.match(source, /form\.set\("submission_id", submissionId\.current\)/);
+});
+
+test("client retains entered data on failed submission and only resets Turnstile", async () => {
+  const source = await readFile(new URL("../app/components/EstimateForm.tsx", import.meta.url), "utf8");
+  const failureStart = source.indexOf("const text = await response.text()");
+  const failureEnd = source.indexOf("} finally {", failureStart);
+  const failurePath = source.slice(failureStart, failureEnd);
+  assert.match(failurePath, /setError\(/);
+  assert.match(failurePath, /resetTurnstile\(\)/);
+  assert.doesNotMatch(failurePath, /clearEstimateForm\(\)/);
+});
+
+test("server claims before Telegram and only releases a confirmed delivery failure", async () => {
+  const source = await readFile(new URL("../app/api/estimate/route.ts", import.meta.url), "utf8");
+  const claimCall = source.indexOf("await claimSubmission(");
+  const telegramCall = source.indexOf('await telegram("sendMessage"');
+  assert.ok(claimCall >= 0 && telegramCall > claimCall);
+  const telegramCatch = source.slice(telegramCall, source.indexOf("if (!(await markSubmissionDelivered", telegramCall));
+  assert.match(telegramCatch, /error instanceof ConfirmedTelegramFailure/);
+  assert.match(telegramCatch, /await releaseSubmission\(/);
 });
