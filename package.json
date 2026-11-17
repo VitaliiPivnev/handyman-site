@@ -8,12 +8,14 @@
     "start": "next start",
     "lint": "eslint",
     "test:estimate": "node --experimental-strip-types --test tests/estimate-route.test.mts",
-    "test:seo": "node --experimental-strip-types --test tests/seo-indexability.test.mts"
+    "test:seo": "node --experimental-strip-types --test tests/seo-indexability.test.mts",
+    "test:cms": "node --experimental-strip-types --test tests/portfolio-cms.test.mts"
   },
   "dependencies": {
     "next": "^16.4.6",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "sharp": "^0.35.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

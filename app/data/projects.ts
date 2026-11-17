@@ -2,6 +2,8 @@
  * Authentic project photos supplied by the site owner in Nov 2026.
  * No AI photos, fake dates, unverified city claims, or fake ratings.
  */
+import cmsProjects from "./cms-projects.json" with { type: "json" };
+
 export type PhotoStage = "before" | "progress" | "after";
 export type ProjectPhoto = { src: string; alt: string; caption?: string; stage: PhotoStage };
 export type Project = {
@@ -14,9 +16,13 @@ export type Project = {
   photos: ProjectPhoto[];
   featured: boolean;
   detailPage: boolean;
+  description?: string;
+  seoTitle?: string;
+  metaDescription?: string;
+  location?: string;
 };
 
-export const projects: Project[] = [
+const legacyProjects: Project[] = [
   {
     "id": "wood-deck-build",
     "title": "New Wood Deck with Steps and Railings",
@@ -792,6 +798,9 @@ export const projects: Project[] = [
     "detailPage": false
   }
 ] as Project[];
+
+/** Published Telegram CMS projects. Legacy projects remain source-controlled above. */
+export const projects: Project[] = [...legacyProjects, ...(cmsProjects as Project[])];
 
 export const projectCategories = Array.from(new Set(projects.map((project) => project.category)));
 export const detailProjects = projects.filter((project) => project.detailPage);

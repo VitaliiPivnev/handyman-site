@@ -18,8 +18,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const project = detailProjects.find((item) => item.id === id);
   if (!project) notFound();
   return {
-    title: `${project.title} | Real Handyman Project Photos`,
-    description: project.summary.slice(0, 160),
+    title: project.seoTitle || `${project.title} | Real Handyman Project Photos`,
+    description: project.metaDescription || project.summary.slice(0, 160),
     alternates: { canonical: `/projects/${project.id}` },
     openGraph: { title: `${project.title} | Handyman Tampa`, description: project.summary, url: `/projects/${project.id}`, images: [{ url: project.cover }] },
   };
@@ -59,6 +59,8 @@ export default async function ProjectDetailPage({ params }: Params) {
         <p className="mt-8 font-bold uppercase tracking-wide text-amber-700">{project.category} • Real project photographs</p>
         <h1 className="mt-3 max-w-4xl text-4xl font-extrabold md:text-6xl">{project.title}</h1>
         <p className="mt-6 max-w-3xl text-lg leading-8 text-neutral-700">{project.summary}</p>
+        {project.description && <p className="mt-5 max-w-3xl whitespace-pre-line leading-8 text-neutral-700">{project.description}</p>}
+        {project.location && <p className="mt-4 text-sm font-semibold text-neutral-600">Project location: {project.location}</p>}
       </section>
       {before && after ? (
         <section className="bg-neutral-100 px-5 py-14">

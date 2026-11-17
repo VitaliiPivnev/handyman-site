@@ -1,0 +1,41 @@
+name: Confirm portfolio CMS publication
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/data/cms-projects.json"
+      - "public/projects/**"
+
+permissions:
+  contents: read
+
+jobs:
+  confirm-live-page:
+    if: startsWith(github.event.head_commit.message, 'portfolio: publish ')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Find newest CMS project slug
+        id: project
+        run: |
+          slug=$(curl -fsSL "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/app/data/cms-projects.json" | jq -r '.[-1].id')
+          test -n "$slug" && test "$slug" != "null"
+          echo "slug=$slug" >> "$GITHUB_OUTPUT"
+      - name: Wait for Vercel production page
+        run: |
+          url="https://handymantampa.net/projects/${{ steps.project.outputs.slug }}"
+          for attempt in $(seq 1 60); do
+            if curl -fsSL --max-time 15 "$url" | grep -q '<h1'; then exit 0; fi
+            sleep 10
+          done
+          exit 1
+      - name: Send confirmed URL to Telegram
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_CMS_BOT_TOKEN }}
+          OWNER_ID: ${{ secrets.TELEGRAM_CMS_OWNER_ID }}
+        run: |
+          test -n "$BOT_TOKEN" && test -n "$OWNER_ID"
+          url="https://handymantampa.net/projects/${{ steps.project.outputs.slug }}"
+          curl -fsSL -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${OWNER_ID}" \
+            --data-urlencode "text=✅ Published and verified: ${url}"
