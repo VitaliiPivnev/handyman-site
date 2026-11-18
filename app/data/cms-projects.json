@@ -1,1 +1,29 @@
-[]
+[
+  {
+    "id": "residential-storm-door-replacement",
+    "title": "Storm Door Replacement — Before & After",
+    "category": "Doors & Carpentry",
+    "serviceSlug": "door-repair",
+    "summary": "Replacement of an existing storm door with a new unit. See the before-and-after photos from this residential door replacement project.",
+    "description": "This project involved replacing an existing residential storm door with a new unit. The old storm door was removed and a replacement was installed at the home's entrance. The before-and-after photos document the change from the original door to the newly installed one.\n\nStorm doors provide an additional layer at an exterior entrance. Replacing an older unit can improve the entrance's appearance and everyday usability.\n\nVitalii Handyman provides door repair, adjustments, hardware replacement, and selected handyman services throughout the Tampa Bay area. Contact us to discuss your door project and request an estimate.",
+    "seoTitle": "Storm Door Replacement | Vitalii Handyman Tampa Bay",
+    "metaDescription": "See a residential storm door replacement project with before-and-after photos. Contact Vitalii Handyman for door repair services in Tampa Bay.",
+    "cover": "/projects/residential-storm-door-replacement-after-2.webp",
+    "photos": [
+      {
+        "src": "/projects/residential-storm-door-replacement-before-1.webp",
+        "alt": "Existing residential storm door before replacement",
+        "caption": "Existing residential storm door before replacement",
+        "stage": "before"
+      },
+      {
+        "src": "/projects/residential-storm-door-replacement-after-2.webp",
+        "alt": "New residential storm door after replacement",
+        "caption": "New residential storm door after replacement",
+        "stage": "after"
+      }
+    ],
+    "featured": false,
+    "detailPage": true
+  }
+]
