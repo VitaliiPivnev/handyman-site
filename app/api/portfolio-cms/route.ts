@@ -1,5 +1,6 @@
 import { processTelegramUpdate, type TelegramUpdate } from "./bot.ts";
 import { timingSafeEqual } from "node:crypto";
+import { safeCmsDiagnostic } from "./errors.ts";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -17,11 +18,21 @@ export async function POST(request: Request) {
     await processTelegramUpdate(update);
     return Response.json({ ok: true });
   } catch (error) {
-    console.error("Portfolio CMS update failed", { category: error instanceof Error ? error.name : "unknown" });
-    return Response.json({ ok: false }, { status: 500 });
+    const diagnostic = safeCmsDiagnostic(error);
+    console.error("Portfolio CMS update failed", diagnostic);
+    return Response.json({ ok: false, code: diagnostic.code }, { status: diagnostic.retryable ? 503 : 500 });
   }
 }
 
 export async function GET() {
-  return Response.json({ service: "portfolio-cms", configured: Boolean(process.env.TELEGRAM_CMS_BOT_TOKEN && process.env.TELEGRAM_CMS_OWNER_ID) });
+  return Response.json({
+    service: "portfolio-cms",
+    configured: Boolean(
+      process.env.TELEGRAM_CMS_BOT_TOKEN
+      && process.env.TELEGRAM_CMS_OWNER_ID
+      && process.env.TELEGRAM_CMS_WEBHOOK_SECRET
+      && process.env.UPSTASH_REDIS_REST_URL
+      && process.env.UPSTASH_REDIS_REST_TOKEN
+    ),
+  });
 }

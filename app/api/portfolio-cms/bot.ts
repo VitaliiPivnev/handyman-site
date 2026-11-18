@@ -4,6 +4,7 @@ import { changeProjectPublication, listPublishedProjects, listUnpublishedProject
 import { beginUpdate, completeUpdate, getDraft, releaseUpdate, removeDraft, saveDraft, withOwnerLock } from "./store.ts";
 import { contentTemplate, newDraft, validateImportedContent, type CmsDraft, type CmsStage } from "./types.ts";
 import { answerCallback, downloadTelegramTextFile, mainMenu, sendMessage } from "./telegram.ts";
+import { CmsRuntimeError } from "./errors.ts";
 
 type TgPhoto = { file_id: string; file_unique_id: string; file_size?: number };
 type TgMessage = { chat: { id: number }; from?: { id: number }; text?: string; photo?: TgPhoto[]; document?: { file_id: string; file_name?: string; mime_type?: string } };
@@ -265,7 +266,7 @@ export async function processTelegramUpdate(update: TelegramUpdate): Promise<voi
   const claim = await beginUpdate(update.update_id);
   if (claim.status !== "acquired") {
     if (claim.status === "done") return;
-    throw new Error("Telegram update is already processing");
+    throw new CmsRuntimeError("update_already_processing", "redis", "update_claim_acquire", true);
   }
   const claimToken = claim.token;
   try {
@@ -273,7 +274,7 @@ export async function processTelegramUpdate(update: TelegramUpdate): Promise<voi
       if (update.callback_query) await handleCallback(update.callback_query, String(user));
       else if (update.message) await handleMessage(update.message, String(user));
     });
-    if (!(await completeUpdate(update.update_id, claimToken))) throw new Error("Unable to finalize Telegram update");
+    if (!(await completeUpdate(update.update_id, claimToken))) throw new CmsRuntimeError("update_claim_lost", "redis", "update_claim_complete", true);
   } catch (error) {
     await releaseUpdate(update.update_id, claimToken).catch(() => undefined);
     throw error;

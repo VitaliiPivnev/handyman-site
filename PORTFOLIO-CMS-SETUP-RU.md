@@ -70,6 +70,8 @@ CMS не использует OpenAI API, Gemini, Vercel Blob, Zapier, Make ил
 
 Для Preview используйте отдельного тестового бота, отдельный owner ID и `GITHUB_CMS_BRANCH` с тестовой веткой. Никогда не давайте Preview token для записи в `main`.
 
+После Preview deployment откройте `https://<preview-domain>/api/portfolio-cms`. Ответ `{"service":"portfolio-cms","configured":true}` подтверждает наличие обязательных для webhook переменных бота, owner, webhook secret и Upstash. Значения и названия отсутствующих секретов endpoint не раскрывает. `configured:false` означает, что минимум одна обязательная Preview-переменная отсутствует; проверьте Environment scope и выполните Redeploy.
+
 ## 5. GitHub Actions secrets
 
 В **Repository → Settings → Secrets and variables → Actions** создайте:
@@ -160,6 +162,20 @@ unset CMS_BOT_TOKEN CMS_WEBHOOK_SECRET
 - **Workflow failed:** откройте Actions → Confirm portfolio CMS publication. Проверьте Vercel build и оба Actions secrets.
 - **CMS owner workflow is busy:** Telegram доставил части album одновременно. Бот намеренно попросил Telegram повторить занятой update; дождитесь повторной доставки, не загружайте album заново вручную.
 - **Страница не появилась:** не публикуйте проект повторно с новым slug; сначала проверьте commit, Vercel deployment и workflow.
+
+### Безопасная диагностика Preview webhook
+
+Runtime log `Portfolio CMS update failed` содержит только безопасные поля `code`, `service`, `operation`, `retryable`, необязательный HTTP status зависимости и класс ошибки. Tokens, Redis URL, Telegram IDs, текст сообщения и содержимое проекта не логируются.
+
+- `redis_not_configured`: Upstash URL или token не назначен окружению Preview.
+- `redis_http_error` + `dependencyStatus: 401/403`: неверная пара Upstash URL/token или credential от другой database.
+- `redis_http_error` + `429/5xx`: временный лимит или сбой Upstash; webhook отвечает 503 для повторной доставки Telegram.
+- `redis_command_error`: Upstash принял HTTP-запрос, но отклонил Redis command.
+- `telegram_not_configured`: Preview bot token отсутствует.
+- `telegram_api_error` + `401/404`: неверный либо отозванный token тестового бота.
+- `owner_lock_busy` или `update_already_processing`: параллельная доставка; это retryable-состояние, повторная отправка пользователем не нужна.
+
+Для проверки отправьте `/start` именно Preview-боту, затем убедитесь, что webhook получил HTTP 200 и бот показал `Private Portfolio CMS`. Не используйте production bot/token для Preview.
 
 ## Практические ограничения
 

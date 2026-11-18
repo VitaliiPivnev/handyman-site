@@ -7,11 +7,16 @@ import { buildEditedProject, optimizeImageBuffer, transitionProjectPublication }
 import { beginUpdate, completeUpdate, releaseUpdate, withOwnerLock } from "../app/api/portfolio-cms/store.ts";
 import { newDraft, sanitizeSlug, validateImportedContent } from "../app/api/portfolio-cms/types.ts";
 import { validateAbsentSnapshot, validatePresentSnapshot } from "../.github/scripts/verify-portfolio-deployment.mjs";
+import { safeCmsDiagnostic } from "../app/api/portfolio-cms/errors.ts";
+import { GET as cmsHealth, POST as cmsWebhook } from "../app/api/portfolio-cms/route.ts";
 
 const originalOwner = process.env.TELEGRAM_CMS_OWNER_ID;
 const originalRedisUrl = process.env.UPSTASH_REDIS_REST_URL;
 const originalRedisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+const originalBotToken = process.env.TELEGRAM_CMS_BOT_TOKEN;
+const originalWebhookSecret = process.env.TELEGRAM_CMS_WEBHOOK_SECRET;
 const originalFetch = globalThis.fetch;
+const originalConsoleError = console.error;
 afterEach(() => {
   if (originalOwner === undefined) delete process.env.TELEGRAM_CMS_OWNER_ID;
   else process.env.TELEGRAM_CMS_OWNER_ID = originalOwner;
@@ -19,7 +24,12 @@ afterEach(() => {
   else process.env.UPSTASH_REDIS_REST_URL = originalRedisUrl;
   if (originalRedisToken === undefined) delete process.env.UPSTASH_REDIS_REST_TOKEN;
   else process.env.UPSTASH_REDIS_REST_TOKEN = originalRedisToken;
+  if (originalBotToken === undefined) delete process.env.TELEGRAM_CMS_BOT_TOKEN;
+  else process.env.TELEGRAM_CMS_BOT_TOKEN = originalBotToken;
+  if (originalWebhookSecret === undefined) delete process.env.TELEGRAM_CMS_WEBHOOK_SECRET;
+  else process.env.TELEGRAM_CMS_WEBHOOK_SECRET = originalWebhookSecret;
   globalThis.fetch = originalFetch;
+  console.error = originalConsoleError;
 });
 
 const validContent = (photoId = "photo123") => ({
@@ -67,9 +77,15 @@ test("structured import validates SEO, service, slug, photo IDs, and unsafe cont
 
 function installRedisMock() {
   const values = new Map<string, string>();
+  const telegramMethods: string[] = [];
   process.env.UPSTASH_REDIS_REST_URL = "https://redis.test";
   process.env.UPSTASH_REDIS_REST_TOKEN = "test-token";
-  globalThis.fetch = async (_input, init) => {
+  globalThis.fetch = async (input, init) => {
+    const url = String(input);
+    if (url.startsWith("https://api.telegram.org/")) {
+      telegramMethods.push(url.split("/").at(-1) || "unknown");
+      return new Response(JSON.stringify({ ok: true, result: {} }), { status: 200, headers: { "content-type": "application/json" } });
+    }
     const command = JSON.parse(String(init?.body)) as Array<string | number>;
     const [name, key] = command;
     let result: unknown = null;
@@ -90,7 +106,7 @@ function installRedisMock() {
     }
     return new Response(JSON.stringify({ result }), { status: 200, headers: { "content-type": "application/json" } });
   };
-  return values;
+  return { values, telegramMethods };
 }
 
 test("failed Telegram updates are released for retry and completed updates are deduplicated", async () => {
@@ -111,10 +127,72 @@ test("owner lock prevents concurrent Telegram album updates from overwriting a d
   let releaseOperation!: () => void;
   const held = withOwnerLock("owner-1", () => new Promise<void>((resolve) => { releaseOperation = resolve; }));
   await new Promise((resolve) => setImmediate(resolve));
-  await assert.rejects(withOwnerLock("owner-1", async () => undefined), /workflow is busy/);
+  await assert.rejects(withOwnerLock("owner-1", async () => undefined), /owner_lock_busy/);
   releaseOperation();
   await held;
   await withOwnerLock("owner-1", async () => undefined);
+});
+
+test("authorized /start completes Redis claim, lock, Telegram response, and deduplication", async () => {
+  const mock = installRedisMock();
+  process.env.TELEGRAM_CMS_OWNER_ID = "123456789";
+  process.env.TELEGRAM_CMS_BOT_TOKEN = "preview-bot-token";
+  process.env.TELEGRAM_CMS_WEBHOOK_SECRET = "preview-webhook-secret";
+  const request = () => new Request("https://preview.test/api/portfolio-cms", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-telegram-bot-api-secret-token": "preview-webhook-secret" },
+    body: JSON.stringify({ update_id: 902, message: { chat: { id: 123456789 }, from: { id: 123456789 }, text: "/start" } }),
+  });
+  assert.equal((await cmsWebhook(request())).status, 200);
+  assert.deepEqual(mock.telegramMethods, ["sendMessage"]);
+  assert.equal(mock.values.get("portfolio-cms:update:902"), "done");
+  assert.equal(mock.values.has("portfolio-cms:lock:123456789"), false);
+  assert.equal((await cmsWebhook(request())).status, 200);
+  assert.deepEqual(mock.telegramMethods, ["sendMessage"]);
+});
+
+test("Preview readiness includes Redis and webhook configuration without exposing values", async () => {
+  process.env.TELEGRAM_CMS_BOT_TOKEN = "private-bot-token";
+  process.env.TELEGRAM_CMS_OWNER_ID = "123456789";
+  process.env.TELEGRAM_CMS_WEBHOOK_SECRET = "private-webhook-secret";
+  process.env.UPSTASH_REDIS_REST_URL = "https://redis.test";
+  process.env.UPSTASH_REDIS_REST_TOKEN = "private-redis-token";
+  const response = await cmsHealth();
+  const body = await response.text();
+  assert.equal(response.status, 200);
+  assert.deepEqual(JSON.parse(body), { service: "portfolio-cms", configured: true });
+  assert.doesNotMatch(body, /private-/);
+  delete process.env.UPSTASH_REDIS_REST_TOKEN;
+  assert.equal((await (await cmsHealth()).json()).configured, false);
+});
+
+test("webhook reports a safe Redis operation code and 503 for a retryable Preview failure", async () => {
+  process.env.TELEGRAM_CMS_OWNER_ID = "123456789";
+  process.env.TELEGRAM_CMS_BOT_TOKEN = "telegram-secret-value";
+  process.env.TELEGRAM_CMS_WEBHOOK_SECRET = "webhook-secret-value";
+  process.env.UPSTASH_REDIS_REST_URL = "https://redis.test";
+  process.env.UPSTASH_REDIS_REST_TOKEN = "redis-secret-value";
+  globalThis.fetch = async () => new Response("temporarily unavailable", { status: 503 });
+  const logged: unknown[] = [];
+  console.error = (...args: unknown[]) => { logged.push(args); };
+  const response = await cmsWebhook(new Request("https://preview.test/api/portfolio-cms", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-telegram-bot-api-secret-token": "webhook-secret-value" },
+    body: JSON.stringify({ update_id: 901, message: { chat: { id: 123456789 }, from: { id: 123456789 }, text: "/start private message" } }),
+  }));
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), { ok: false, code: "redis_http_error" });
+  const serialized = JSON.stringify(logged);
+  assert.match(serialized, /update_claim_read/);
+  assert.match(serialized, /"dependencyStatus":503/);
+  assert.doesNotMatch(serialized, /secret-value|\/start|123456789|private message/);
+});
+
+test("diagnostics classify Telegram failures without logging API descriptions or request data", () => {
+  const diagnostic = safeCmsDiagnostic(new Error("token=secret and customer message"));
+  const serialized = JSON.stringify(diagnostic);
+  assert.match(serialized, /unexpected_error/);
+  assert.doesNotMatch(serialized, /token=secret|customer message/);
 });
 
 const sampleProject = {
