@@ -25,5 +25,27 @@
     ],
     "featured": false,
     "detailPage": true
+  },
+  {
+    "id": "75-inch-tv-wall-mounting",
+    "title": "75-Inch TV Wall Mounting",
+    "category": "TV Mounting & Media Installation",
+    "serviceSlug": "tv-mounting",
+    "summary": "Completed wall mounting of a 75-inch television. See the finished installation and learn about TV mounting services from Vitalii Handyman.",
+    "description": "This project involved installing a 75-inch television on a wall in a residential space. The finished installation provides a wall-mounted TV setup and frees up space that would otherwise be occupied by a television stand.\n\nLarge-screen TVs require careful planning for placement and secure mounting. Wall mounting can help create a clean, organized entertainment area while making better use of the available space.\n\nVitalii Handyman provides TV mounting services throughout the Tampa Bay area. Contact us to discuss your television installation and request an estimate.",
+    "seoTitle": "75-Inch TV Wall Mounting | Vitalii Handyman Tampa",
+    "metaDescription": "See a completed 75-inch TV wall mounting project. Vitalii Handyman provides television mounting services throughout the Tampa Bay area.",
+    "location": "Tampa",
+    "cover": "/projects/75-inch-tv-wall-mounting-after-1.webp",
+    "photos": [
+      {
+        "src": "/projects/75-inch-tv-wall-mounting-after-1.webp",
+        "alt": "Completed installation of a 75-inch television mounted on a wall",
+        "caption": "Completed installation of a 75-inch television mounted on a wall",
+        "stage": "after"
+      }
+    ],
+    "featured": false,
+    "detailPage": true
   }
 ]
