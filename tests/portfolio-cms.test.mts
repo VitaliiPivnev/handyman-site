@@ -3,12 +3,14 @@ import { afterEach, test } from "node:test";
 import { readFile } from "node:fs/promises";
 import sharp from "sharp";
 import { isAuthorizedTelegramUser } from "../app/api/portfolio-cms/bot.ts";
-import { buildEditedProject, optimizeImageBuffer, transitionProjectPublication } from "../app/api/portfolio-cms/publisher.ts";
+import { buildEditedProject, buildNewProject, optimizeImageBuffer, transitionProjectPublication } from "../app/api/portfolio-cms/publisher.ts";
 import { beginUpdate, completeUpdate, releaseUpdate, withOwnerLock } from "../app/api/portfolio-cms/store.ts";
 import { newDraft, sanitizeSlug, validateImportedContent } from "../app/api/portfolio-cms/types.ts";
 import { validateAbsentSnapshot, validatePresentSnapshot } from "../.github/scripts/verify-portfolio-deployment.mjs";
 import { safeCmsDiagnostic } from "../app/api/portfolio-cms/errors.ts";
 import { GET as cmsHealth, POST as cmsWebhook } from "../app/api/portfolio-cms/route.ts";
+import { portfolioCategoryByService, portfolioServiceOptions } from "../app/data/portfolio-categories.ts";
+import { services } from "../app/data/site.ts";
 
 const originalOwner = process.env.TELEGRAM_CMS_OWNER_ID;
 const originalRedisUrl = process.env.UPSTASH_REDIS_REST_URL;
@@ -65,6 +67,10 @@ test("new drafts are resumable, revisioned, and contain no public project data",
 test("structured import validates SEO, service, slug, photo IDs, and unsafe content", () => {
   const valid = validateImportedContent(validContent(), ["photo123"]);
   assert.equal(valid.ok, true);
+  if (valid.ok) {
+    assert.equal(valid.value.category, "Door Installation & Repair");
+    assert.deepEqual(valid.categoryCorrection, { from: "Doors & Carpentry", to: "Door Installation & Repair" });
+  }
   assert.equal(sanitizeSlug("  New Door / Tampa!  "), "new-door-tampa");
   assert.ok(sanitizeSlug("a very long project slug that must fit safely inside telegram callback data").length <= 48);
   const unknownPhoto = validateImportedContent({ ...validContent(), imageAlt: { wrong: "Unknown photo" } }, ["photo123"]);
@@ -73,6 +79,24 @@ test("structured import validates SEO, service, slug, photo IDs, and unsafe cont
   assert.equal(unsafe.ok, false);
   const badService = validateImportedContent({ ...validContent(), serviceSlug: "electrical-contracting" }, ["photo123"]);
   assert.equal(badService.ok, false);
+});
+
+test("every website service has one canonical customer-facing portfolio category", () => {
+  assert.deepEqual(Object.keys(portfolioCategoryByService).sort(), services.map((service) => service.slug).sort());
+  assert.equal(portfolioServiceOptions.length, services.length);
+  assert.equal(portfolioCategoryByService["door-repair"], "Door Installation & Repair");
+  assert.ok(portfolioServiceOptions.every((option) => option.category.length >= 8));
+});
+
+test("version 1 imports may omit category and storm door projects receive the canonical door category", () => {
+  const stormDoor: Record<string, unknown> = { ...validContent() };
+  delete stormDoor.category;
+  const result = validateImportedContent({ ...stormDoor, title: "Storm Door Replacement Project" }, ["photo123"]);
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  assert.equal(result.value.serviceSlug, "door-repair");
+  assert.equal(result.value.category, "Door Installation & Repair");
+  assert.deepEqual(result.categoryCorrection, { from: undefined, to: "Door Installation & Repair" });
 });
 
 function installRedisMock() {
@@ -151,6 +175,34 @@ test("authorized /start completes Redis claim, lock, Telegram response, and dedu
   assert.deepEqual(mock.telegramMethods, ["sendMessage"]);
 });
 
+test("Telegram service buttons update both service and canonical category in an existing draft", async () => {
+  const mock = installRedisMock();
+  process.env.TELEGRAM_CMS_OWNER_ID = "123456789";
+  process.env.TELEGRAM_CMS_BOT_TOKEN = "preview-bot-token";
+  process.env.TELEGRAM_CMS_WEBHOOK_SECRET = "preview-webhook-secret";
+  const validated = validateImportedContent(validContent(), ["photo123"]);
+  assert.equal(validated.ok, true);
+  if (!validated.ok) return;
+  const draft = newDraft("service-selector-draft");
+  draft.photos = [{ id: "photo123", telegramFileId: "file-1", stage: "after", order: 0 }];
+  draft.content = validated.value;
+  mock.values.set("portfolio-cms:draft:123456789", JSON.stringify(draft));
+  const response = await cmsWebhook(new Request("https://preview.test/api/portfolio-cms", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-telegram-bot-api-secret-token": "preview-webhook-secret" },
+    body: JSON.stringify({
+      update_id: 903,
+      callback_query: { id: "callback-1", from: { id: 123456789 }, data: "svc:fence-repair", message: { chat: { id: 123456789 } } },
+    }),
+  }));
+  assert.equal(response.status, 200);
+  const stored = JSON.parse(mock.values.get("portfolio-cms:draft:123456789") || "null");
+  assert.equal(stored.content.serviceSlug, "fence-repair");
+  assert.equal(stored.content.category, "Fence & Gate Repair");
+  assert.deepEqual(stored.categoryCorrection, { from: "Door Installation & Repair", to: "Fence & Gate Repair", reason: "service-selection" });
+  assert.deepEqual(mock.telegramMethods, ["answerCallbackQuery", "sendMessage"]);
+});
+
 test("Preview readiness includes Redis and webhook configuration without exposing values", async () => {
   process.env.TELEGRAM_CMS_BOT_TOKEN = "private-bot-token";
   process.env.TELEGRAM_CMS_OWNER_ID = "123456789";
@@ -196,9 +248,9 @@ test("diagnostics classify Telegram failures without logging API descriptions or
 });
 
 const sampleProject = {
-  id: "real-cabinet-project", title: "Real Cabinet Repair", category: "Cabinets", serviceSlug: "cabinet-repair",
-  summary: "A documented cabinet repair project with real photographs.", cover: "/projects/real.webp",
-  photos: [{ src: "/projects/real.webp", alt: "Repaired cabinet", stage: "after" as const }], featured: false, detailPage: true,
+  id: "real-door-project", title: "Real Door Repair", category: "Doors & Carpentry", serviceSlug: "door-repair",
+  summary: "A documented door repair project with real photographs.", cover: "/projects/real.webp",
+  photos: [{ src: "/projects/real.webp", alt: "Repaired door", stage: "after" as const }], featured: false, detailPage: true,
 };
 
 test("unpublish and republish preserve the exact project and drive listing/sitemap membership", () => {
@@ -223,21 +275,31 @@ test("in-place editing changes content, SEO, photos, order, category, and locati
   draft.content = {
     ...validContent("new-photo"),
     version: 1 as const,
-    title: "Updated Cabinet Door and Hardware Repair",
+    title: "Updated Storm Door and Hardware Repair",
     slug: "attempted-new-url",
-    serviceSlug: "cabinet-repair",
-    category: "Cabinet Repairs",
+    serviceSlug: "door-repair",
+    category: "Arbitrary Category",
     location: "Westchase",
-    imageAlt: { "new-photo": "Cabinet after completed door and hardware repair", "existing-1": "Cabinet before the repair" },
+    imageAlt: { "new-photo": "Storm door after completed hardware repair", "existing-1": "Storm door before the repair" },
   };
   const edited = buildEditedProject(sampleProject, draft, new Map([["new-photo", `public/projects/${sampleProject.id}-after-new-photo.webp`]]));
   assert.equal(edited.id, sampleProject.id);
   assert.equal(edited.title, draft.content!.title);
   assert.equal(edited.seoTitle, draft.content!.seoTitle);
-  assert.equal(edited.category, "Cabinet Repairs");
+  assert.equal(edited.category, "Door Installation & Repair");
   assert.equal(edited.location, "Westchase");
   assert.deepEqual(edited.photos.map((photo) => photo.stage), ["after", "before"]);
   assert.equal(edited.cover, `/projects/${sampleProject.id}-after-new-photo.webp`);
+});
+
+test("new CMS project creation always uses the canonical service category", () => {
+  const validated = validateImportedContent(validContent(), ["photo123"]);
+  assert.equal(validated.ok, true);
+  if (!validated.ok) return;
+  const project = buildNewProject(validated.value, [{ src: "/projects/storm-door.webp", alt: "Installed storm door", stage: "after" }]);
+  assert.equal(project.serviceSlug, "door-repair");
+  assert.equal(project.category, "Door Installation & Repair");
+  assert.equal(project.cover, "/projects/storm-door.webp");
 });
 
 test("deployment verification requires exact content, canonical, and sitemap state", () => {
@@ -264,13 +326,16 @@ test("image processing produces metadata-free WebP without enlargement", async (
 });
 
 test("webhook, update replay protection, atomic Git publishing, and sitemap integration remain wired", async () => {
-  const [route, store, publisher, projects, sitemap, workflow] = await Promise.all([
+  const [route, store, publisher, projects, sitemap, workflow, bot, portfolio, projectsPage] = await Promise.all([
     readFile(new URL("../app/api/portfolio-cms/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/portfolio-cms/store.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/portfolio-cms/publisher.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/data/projects.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/sitemap.ts", import.meta.url), "utf8"),
     readFile(new URL("../.github/workflows/portfolio-cms-publish.yml", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/portfolio-cms/bot.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/components/Portfolio.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/projects/page.tsx", import.meta.url), "utf8"),
   ]);
   assert.match(route, /x-telegram-bot-api-secret-token/);
   assert.match(route, /TELEGRAM_CMS_WEBHOOK_SECRET/);
@@ -289,6 +354,14 @@ test("webhook, update replay protection, atomic Git publishing, and sitemap inte
   assert.match(workflow, /verify-portfolio-deployment\.mjs/);
   assert.match(workflow, /app\/data\/cms-unpublished-projects\.json/);
   assert.match(workflow, /publish\|edit\|republish\|unpublish\|delete/);
+  assert.match(bot, /callback_data: "services"/);
+  assert.match(bot, /callback_data: `svc:\$\{option\.slug\}`/);
+  assert.match(bot, /Category.*corrected/);
+  assert.match(portfolio, /project\.serviceSlug === serviceSlug/);
+  assert.match(portfolio, /project\.category === category/);
+  assert.match(projectsPage, /projectCategories\.map/);
+  assert.match(projects, /const legacyProjects/);
+  assert.match(projects, /"category": "Decks & Pergolas"/);
 });
 
 test("publication requires explicit callback approval and preserves a failed draft", async () => {

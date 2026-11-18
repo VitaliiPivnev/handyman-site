@@ -1,4 +1,5 @@
 import { cities } from "../../data/site.ts";
+import { getPortfolioCategory, portfolioServiceOptions } from "../../data/portfolio-categories.ts";
 import type { Project } from "../../data/projects.ts";
 import { changeProjectPublication, listPublishedProjects, listUnpublishedProjects, publishDraft } from "./publisher.ts";
 import { beginUpdate, completeUpdate, getDraft, releaseUpdate, removeDraft, saveDraft, withOwnerLock } from "./store.ts";
@@ -29,6 +30,7 @@ function draftMenu() {
       { text: "AFTER", callback_data: "stage:after" },
     ],
     [{ text: "🖼 Manage Photos", callback_data: "photos" }, { text: "📝 Description", callback_data: "description" }],
+    [{ text: "🧰 Service & Category", callback_data: "services" }],
     [{ text: "📍 Location", callback_data: "location" }, { text: "📋 Copy Template", callback_data: "template" }],
     [{ text: "📥 Import JSON", callback_data: "import" }, { text: "👁 Preview", callback_data: "preview" }],
     [{ text: "💾 Save Draft", callback_data: "save" }, { text: "❌ Cancel", callback_data: "cancel" }],
@@ -45,7 +47,10 @@ function preview(draft: CmsDraft): string {
   if (!content) return `${counts(draft)}\n\nNo imported project content yet.`;
   const grouped = (["before", "progress", "after"] as CmsStage[]).map((stage) => `${stageName[stage]}: ${draft.photos.filter((p) => p.stage === stage).length}`).join(" · ");
   const effectiveSlug = draft.editProjectId || content.slug;
-  return `<b>${escapeHtml(content.title)}</b>\n\n${escapeHtml(content.summary)}\n\n${escapeHtml(content.description)}\n\n<b>SEO title:</b> ${escapeHtml(content.seoTitle)}\n<b>Meta:</b> ${escapeHtml(content.metaDescription)}\n<b>URL:</b> /projects/${effectiveSlug}${draft.editProjectId ? " (preserved)" : ""}\n<b>Service:</b> ${content.serviceSlug}\n<b>Location:</b> ${escapeHtml(content.location || draft.location || "Not supplied")}\n<b>Photos:</b> ${grouped}`;
+  const correction = draft.categoryCorrection
+    ? `\n\n⚠️ <b>Category ${draft.categoryCorrection.from ? "corrected" : "assigned"}:</b> ${draft.categoryCorrection.from ? `${escapeHtml(draft.categoryCorrection.from)} → ` : ""}${escapeHtml(draft.categoryCorrection.to)}`
+    : "";
+  return `<b>${escapeHtml(content.title)}</b>\n\n${escapeHtml(content.summary)}\n\n${escapeHtml(content.description)}\n\n<b>SEO title:</b> ${escapeHtml(content.seoTitle)}\n<b>Meta:</b> ${escapeHtml(content.metaDescription)}\n<b>URL:</b> /projects/${effectiveSlug}${draft.editProjectId ? " (preserved)" : ""}\n<b>Service:</b> ${content.serviceSlug}\n<b>Category:</b> ${escapeHtml(content.category)}${correction}\n<b>Location:</b> ${escapeHtml(content.location || draft.location || "Not supplied")}\n<b>Photos:</b> ${grouped}`;
 }
 
 function editDraft(project: Project, wasPublished: boolean): CmsDraft {
@@ -54,6 +59,7 @@ function editDraft(project: Project, wasPublished: boolean): CmsDraft {
   draft.editWasPublished = wasPublished;
   draft.status = "preview";
   draft.location = project.location;
+  draft.selectedServiceSlug = project.serviceSlug;
   draft.photos = project.photos.map((photo, order) => ({ id: `existing-${order + 1}`, existingSrc: photo.src, stage: photo.stage, order }));
   draft.content = {
     version: 1,
@@ -64,10 +70,11 @@ function editDraft(project: Project, wasPublished: boolean): CmsDraft {
     metaDescription: project.metaDescription || project.summary.slice(0, 160),
     slug: project.id,
     serviceSlug: project.serviceSlug,
-    category: project.category,
+    category: getPortfolioCategory(project.serviceSlug) || project.category,
     location: project.location,
     imageAlt: Object.fromEntries(project.photos.map((photo, index) => [`existing-${index + 1}`, photo.alt])),
   };
+  if (draft.content.category !== project.category) draft.categoryCorrection = { from: project.category, to: draft.content.category, reason: "edit" };
   return draft;
 }
 
@@ -80,6 +87,8 @@ async function importJson(chatId: number, userId: string, draft: CmsDraft, raw: 
     return;
   }
   draft.content = validated.value;
+  draft.selectedServiceSlug = validated.value.serviceSlug;
+  draft.categoryCorrection = validated.categoryCorrection ? { ...validated.categoryCorrection, reason: "import" } : undefined;
   if (validated.value.location) draft.location = validated.value.location;
   draft.status = "preview";
   draft.revision += 1;
@@ -87,7 +96,8 @@ async function importJson(chatId: number, userId: string, draft: CmsDraft, raw: 
   await sendMessage(chatId, `${preview(draft)}\n\nReview everything before publishing.`, [
     [{ text: "✅ Publish", callback_data: "publish" }],
     [{ text: "✏️ Edit Text", callback_data: "import" }, { text: "🖼 Edit Photos", callback_data: "photos" }],
-    [{ text: "📍 Edit Location", callback_data: "location" }, { text: "💾 Save Draft", callback_data: "save" }],
+    [{ text: "🧰 Change Service", callback_data: "services" }, { text: "📍 Edit Location", callback_data: "location" }],
+    [{ text: "💾 Save Draft", callback_data: "save" }],
     [{ text: "❌ Cancel", callback_data: "cancel" }],
   ]);
 }
@@ -217,12 +227,35 @@ async function handleCallback(callback: TgCallback, userId: string) {
     await sendMessage(chatId, `Send the confirmed project city, or choose Skip. Existing service-area cities include:\n${cities.map((city) => city.name).join(", ")}`, [[{ text: "Skip", callback_data: "skip_location" }], [{ text: "Back", callback_data: "back" }]]); return;
   }
   if (action === "skip_location") { delete draft.location; if (draft.content) delete draft.content.location; draft.status = "photos"; draft.revision += 1; await saveDraft(userId, draft); await showDraft(chatId, draft, "Location omitted. The project will not claim a city."); return; }
+  if (action === "services") {
+    const rows = portfolioServiceOptions.map((option) => [{
+      text: `${option.slug === (draft.content?.serviceSlug || draft.selectedServiceSlug) ? "✓ " : ""}${option.serviceTitle} — ${option.category}`,
+      callback_data: `svc:${option.slug}`,
+    }]);
+    await sendMessage(chatId, "Choose the project service. Its portfolio category is assigned automatically.", [...rows, [{ text: "Back", callback_data: "back" }]]); return;
+  }
+  if (action.startsWith("svc:")) {
+    const serviceSlug = action.slice(4);
+    const category = getPortfolioCategory(serviceSlug);
+    if (!category) { await sendMessage(chatId, "That service is no longer available. Choose another service."); return; }
+    const previousCategory = draft.content?.category;
+    draft.selectedServiceSlug = serviceSlug;
+    if (draft.content) {
+      draft.content.serviceSlug = serviceSlug;
+      draft.content.category = category;
+    }
+    draft.categoryCorrection = previousCategory !== category ? { from: previousCategory, to: category, reason: "service-selection" } : undefined;
+    draft.revision += 1;
+    await saveDraft(userId, draft);
+    await showDraft(chatId, draft, `Service selected. Portfolio category: ${category}.`); return;
+  }
   if (action === "template") {
     const ids = draft.photos.map((photo) => `${photo.id} (${stageName[photo.stage]})`).join(", ") || "Upload photos first";
-    await sendMessage(chatId, `<b>Photo IDs:</b> ${ids}\n\n<pre>${JSON.stringify(contentTemplate, null, 2).replace(/</g, "&lt;")}</pre>`); return;
+    const template = { ...contentTemplate, serviceSlug: draft.content?.serviceSlug || draft.selectedServiceSlug || contentTemplate.serviceSlug };
+    await sendMessage(chatId, `<b>Photo IDs:</b> ${ids}\n\n<pre>${JSON.stringify(template, null, 2).replace(/</g, "&lt;")}</pre>\n\nCategory is assigned automatically from the selected service.`); return;
   }
   if (action === "import") { draft.status = "content"; await saveDraft(userId, draft); await sendMessage(chatId, "Paste the version 1 JSON object or upload it as a .json file. Reimporting will not remove your photos."); return; }
-  if (action === "preview") { await sendMessage(chatId, preview(draft), draft.content ? [[{ text: "✅ Publish", callback_data: "publish" }], [{ text: "Back", callback_data: "back" }]] : draftMenu()); return; }
+  if (action === "preview") { await sendMessage(chatId, preview(draft), draft.content ? [[{ text: "✅ Publish", callback_data: "publish" }], [{ text: "🧰 Change Service", callback_data: "services" }], [{ text: "Back", callback_data: "back" }]] : draftMenu()); return; }
   if (action === "photos") {
     const rows = draft.photos.map((photo) => [{ text: `${stageName[photo.stage]} ${photo.id} ↑`, callback_data: `up:${photo.id}` }, { text: "Move", callback_data: `move:${photo.id}` }, { text: "Delete", callback_data: `del:${photo.id}` }]);
     await sendMessage(chatId, `${counts(draft)}\nEach photo has a stable ID used by imported alt text.`, [...rows, [{ text: "Back", callback_data: "back" }]]); return;

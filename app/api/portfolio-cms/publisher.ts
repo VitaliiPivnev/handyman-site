@@ -1,7 +1,8 @@
 import sharp from "sharp";
 import { createHash } from "node:crypto";
 import { projects, type Project } from "../../data/projects.ts";
-import type { CmsDraft, DraftPhoto } from "./types.ts";
+import type { CmsDraft, DraftPhoto, ImportedContent } from "./types.ts";
+import { getPortfolioCategory } from "../../data/portfolio-categories.ts";
 
 type GithubRef = { object: { sha: string } };
 type GithubCommit = { tree: { sha: string } };
@@ -101,13 +102,7 @@ export async function publishDraft(draft: CmsDraft): Promise<{ commitSha: string
     caption: content.imageAlt[item.photo.id],
     stage: item.photo.stage,
   }));
-  const after = photos.find((photo) => photo.stage === "after") || photos[0];
-  const project: Project = {
-    id: content.slug, title: content.title, category: content.category, serviceSlug: content.serviceSlug,
-    summary: content.summary, description: content.description, seoTitle: content.seoTitle,
-    metaDescription: content.metaDescription, location: content.location || draft.location,
-    cover: after.src, photos, featured: false, detailPage: true,
-  };
+  const project = buildNewProject(content, photos, draft.location);
 
   const ref = await github<GithubRef>(`/git/ref/heads/${encodeURIComponent(branch())}`);
   const parent = await github<GithubCommit>(`/git/commits/${ref.object.sha}`);
@@ -133,6 +128,26 @@ export async function publishDraft(draft: CmsDraft): Promise<{ commitSha: string
     method: "PATCH", body: JSON.stringify({ sha: commit.sha, force: false }),
   });
   return { commitSha: commit.sha, url: `https://handymantampa.net/projects/${content.slug}` };
+}
+
+export function buildNewProject(content: ImportedContent, photos: Project["photos"], draftLocation?: string): Project {
+  if (!photos.length) throw new Error("A CMS project needs at least one photo");
+  const after = photos.find((photo) => photo.stage === "after") || photos[0];
+  return {
+    id: content.slug,
+    title: content.title,
+    category: getPortfolioCategory(content.serviceSlug) || content.category,
+    serviceSlug: content.serviceSlug,
+    summary: content.summary,
+    description: content.description,
+    seoTitle: content.seoTitle,
+    metaDescription: content.metaDescription,
+    location: content.location || draftLocation,
+    cover: after.src,
+    photos,
+    featured: false,
+    detailPage: true,
+  };
 }
 
 async function editDraftProject(draft: CmsDraft): Promise<{ commitSha: string; url: string }> {
@@ -195,7 +210,7 @@ export function buildEditedProject(existing: Project, draft: CmsDraft, newImageP
     ...existing,
     id: draft.editProjectId,
     title: draft.content.title,
-    category: draft.content.category,
+    category: getPortfolioCategory(draft.content.serviceSlug) || draft.content.category,
     serviceSlug: draft.content.serviceSlug,
     summary: draft.content.summary,
     description: draft.content.description,

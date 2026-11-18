@@ -107,7 +107,26 @@ unset CMS_BOT_TOKEN CMS_WEBHOOK_SECRET
 5. В **🖼 Manage Photos** можно удалить фото, передвинуть выше или последовательно сменить BEFORE → DURING → AFTER.
 6. При необходимости добавьте короткое описание без автоматического перевода.
 7. В **📍 Location** укажите только подтверждённый город либо нажмите **Skip**.
-8. Нажмите **📋 Copy Template**. В сообщении будут stable photo IDs.
+8. В **🧰 Service & Category** выберите подходящую услугу. Бот автоматически назначит связанную с ней категорию портфолио.
+9. Нажмите **📋 Copy Template**. В сообщении будут stable photo IDs и выбранный `serviceSlug`; придумывать `category` для JSON не нужно.
+
+### Канонические категории CMS
+
+| Service slug | Категория портфолио |
+|---|---|
+| `door-repair` | Door Installation & Repair |
+| `drywall-repair` | Drywall & Ceiling Repair |
+| `interior-painting` | Interior Painting & Finishing |
+| `flooring-installation` | Flooring Installation & Repair |
+| `tv-mounting` | TV Mounting & Media Installation |
+| `furniture-assembly` | Furniture Assembly |
+| `plumbing-repairs` | Plumbing Fixture Replacement |
+| `fence-repair` | Fence & Gate Repair |
+| `deck-repair` | Deck Repair & Maintenance |
+| `exterior-painting` | Exterior Painting & Trim |
+| `general-handyman-services` | General Handyman Services |
+
+Mapping хранится централизованно и применяется только к Telegram CMS-проектам. Исторические категории legacy-портфолио не изменяются.
 
 ## 8. Подготовка JSON в ChatGPT Plus
 
@@ -122,7 +141,7 @@ unset CMS_BOT_TOKEN CMS_WEBHOOK_SECRET
 1. Нажмите **📥 Import JSON**.
 2. Вставьте JSON либо загрузите `.json` до 100 KB.
 3. Исправьте перечисленные ботом ошибки и импортируйте повторно — фотографии не потеряются.
-4. Проверьте title, summary, description, SEO title, meta description, URL, service, location, photo counts и alt text.
+4. Проверьте title, summary, description, SEO title, meta description, URL, service, category, location, photo counts и alt text. Если старый JSON содержит другую `category` либо не содержит её, Preview явно покажет автоматическую коррекцию.
 5. Только после проверки нажмите **✅ Publish**.
 6. Первое сообщение подтверждает Git commit, но **не утверждает, что страница уже live**.
 7. Отдельное сообщение `Published and verified` придёт после успешного Vercel deployment и HTTP-проверки страницы.
@@ -144,6 +163,7 @@ unset CMS_BOT_TOKEN CMS_WEBHOOK_SECRET
 
 - **📁 Published Projects** показывает проекты, созданные CMS, и отдельно reversible unpublished projects.
 - **Full in-place edit** создаёт защищённый draft из существующего CMS-проекта. Можно изменить текст, SEO title/description, service/category, подтверждённую location, удалить/добавить/переставить фотографии и изменить BEFORE/DURING/AFTER. Импортируйте JSON заново после изменения набора фотографий. Исходный slug и URL сохраняются независимо от `slug` в импортированном JSON.
+- При смене service через Telegram category обновляется автоматически. Текст, SEO metadata, фотографии, location и исходный URL при этом не перезаписываются.
 - **Unpublish** после отдельного подтверждения убирает проект из публичного JSON, портфолио и sitemap, но сохраняет запись и фотографии для Republish.
 - **Republish** также требует подтверждения и возвращает тот же slug и URL. Не используйте slug для другого проекта.
 - **Permanently delete** требует отдельного подтверждения, удаляет CMS-запись и её изображения из текущего Git tree. История Git остаётся технически восстановимой администраторами repository.

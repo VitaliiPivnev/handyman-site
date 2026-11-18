@@ -1,4 +1,5 @@
 import { cities, services } from "../../data/site.ts";
+import { getPortfolioCategory } from "../../data/portfolio-categories.ts";
 
 export type CmsStage = "before" | "progress" | "after";
 export type DraftPhoto = {
@@ -25,6 +26,8 @@ export type ImportedContent = {
   imageAlt: Record<string, string>;
 };
 
+export type CategoryCorrection = { from?: string; to: string; reason: "import" | "service-selection" | "edit" };
+
 export type CmsDraft = {
   id: string;
   revision: number;
@@ -39,6 +42,8 @@ export type CmsDraft = {
   error?: string;
   editProjectId?: string;
   editWasPublished?: boolean;
+  selectedServiceSlug?: string;
+  categoryCorrection?: CategoryCorrection;
 };
 
 export const contentTemplate = {
@@ -50,7 +55,6 @@ export const contentTemplate = {
   metaDescription: "Accurate meta description (80-160 characters).",
   slug: "readable-project-slug",
   serviceSlug: services[0].slug,
-  category: "Doors & Carpentry",
   keywords: ["natural phrase"],
   location: "Only include when the owner explicitly confirmed it",
   imageAlt: { "PHOTO_ID_FROM_BOT": "Accurate description of the visible work" },
@@ -65,7 +69,7 @@ export function sanitizeSlug(value: string): string {
   return value.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 48).replace(/-+$/g, "");
 }
 
-export function validateImportedContent(input: unknown, photoIds: string[]): { ok: true; value: ImportedContent } | { ok: false; errors: string[] } {
+export function validateImportedContent(input: unknown, photoIds: string[]): { ok: true; value: ImportedContent; categoryCorrection?: Omit<CategoryCorrection, "reason"> } | { ok: false; errors: string[] } {
   const errors: string[] = [];
   if (!input || typeof input !== "object" || Array.isArray(input)) return { ok: false, errors: ["Paste one JSON object."] };
   const raw = input as Record<string, unknown>;
@@ -77,7 +81,8 @@ export function validateImportedContent(input: unknown, photoIds: string[]): { o
   const metaDescription = clean(raw.metaDescription, 170);
   const slug = sanitizeSlug(clean(raw.slug, 100));
   const serviceSlug = clean(raw.serviceSlug, 80);
-  const category = clean(raw.category, 80);
+  const importedCategory = clean(raw.category, 80);
+  const category = getPortfolioCategory(serviceSlug) || "";
   const location = clean(raw.location, 100) || undefined;
   if (title.length < 8) errors.push("title must be at least 8 characters.");
   if (summary.length < 40) errors.push("summary must be at least 40 characters.");
@@ -85,13 +90,12 @@ export function validateImportedContent(input: unknown, photoIds: string[]): { o
   if (seoTitle.length < 20 || seoTitle.length > 65) errors.push("seoTitle must be 20-65 characters.");
   if (metaDescription.length < 70 || metaDescription.length > 160) errors.push("metaDescription must be 70-160 characters.");
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) errors.push("slug must contain lowercase words and hyphens.");
-  if (!services.some((service) => service.slug === serviceSlug)) errors.push("serviceSlug must match an existing service.");
-  if (!category) errors.push("category is required.");
+  if (!services.some((service) => service.slug === serviceSlug) || !category) errors.push("serviceSlug must match an existing service.");
   if (location && !cities.some((city) => city.name.toLowerCase() === location.toLowerCase())) {
     // Manual cities are allowed, but must be simple text rather than a URL or markup.
     if (!/^[A-Za-z .'-]{2,100}$/.test(location)) errors.push("location must be a city name or omitted.");
   }
-  const textFields = [title, summary, description, seoTitle, metaDescription, category, location || ""];
+  const textFields = [title, summary, description, seoTitle, metaDescription, location || ""];
   if (textFields.some(hasUnsafeMarkup)) errors.push("HTML, scripts and unsafe URLs are not allowed.");
   const imageAlt = raw.imageAlt && typeof raw.imageAlt === "object" && !Array.isArray(raw.imageAlt)
     ? Object.fromEntries(Object.entries(raw.imageAlt as Record<string, unknown>).map(([id, alt]) => [id, clean(alt, 180)]))
@@ -101,10 +105,14 @@ export function validateImportedContent(input: unknown, photoIds: string[]): { o
   if (Object.values(imageAlt).some(hasUnsafeMarkup)) errors.push("Image alt text contains unsafe markup.");
   const keywords = Array.isArray(raw.keywords) ? raw.keywords.map((item) => clean(item, 60)).filter(Boolean).slice(0, 8) : undefined;
   if (errors.length) return { ok: false, errors };
-  return { ok: true, value: { version: 1, title, summary, description, seoTitle, metaDescription, slug, serviceSlug, category, keywords, location, imageAlt } };
+  return {
+    ok: true,
+    value: { version: 1, title, summary, description, seoTitle, metaDescription, slug, serviceSlug, category, keywords, location, imageAlt },
+    ...(importedCategory !== category ? { categoryCorrection: { from: importedCategory || undefined, to: category } } : {}),
+  };
 }
 
 export function newDraft(id = crypto.randomUUID()): CmsDraft {
   const now = new Date().toISOString();
-  return { id, revision: 1, status: "photos", selectedStage: "after", photos: [], createdAt: now, updatedAt: now };
+  return { id, revision: 1, status: "photos", selectedStage: "after", selectedServiceSlug: services[0].slug, photos: [], createdAt: now, updatedAt: now };
 }

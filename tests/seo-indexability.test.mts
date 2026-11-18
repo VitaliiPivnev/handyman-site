@@ -55,7 +55,8 @@ test("sitemap includes only primary indexable route groups and real detail proje
   assert.doesNotMatch(source, /handyman\/\$\{city[^}]*}\/[\s\S]*service/);
 
   const expectedCount = 1 + services.length + cities.length + 1 + 3 + detailProjects.length;
-  assert.equal(expectedCount, 59);
+  const cmsProjects = JSON.parse(await readSource("app/data/cms-projects.json")) as Array<{ detailPage?: boolean }>;
+  assert.equal(expectedCount, 59 + cmsProjects.filter((project) => project.detailPage).length);
 });
 
 test("Phase 2 adds only three distinct city hubs without adding city-service combinations", () => {
@@ -170,8 +171,9 @@ test("marketing copy invites a scope review instead of directing leads to anothe
 
 test("real portfolio inventory and contact details remain intact", async () => {
   const { projects } = await import("../app/data/projects.ts");
-  assert.equal(projects.length, 33);
-  assert.equal(detailProjects.length, 23);
+  const cmsProjects = JSON.parse(await readSource("app/data/cms-projects.json")) as Array<{ detailPage?: boolean }>;
+  assert.equal(projects.length - cmsProjects.length, 33);
+  assert.equal(detailProjects.length - cmsProjects.filter((project) => project.detailPage).length, 23);
   assert.ok(projects.every((project) => project.photos.length > 0));
   const business = await readSource("app/data/business.ts");
   assert.match(business, /phone: "\+13054650028"/);
