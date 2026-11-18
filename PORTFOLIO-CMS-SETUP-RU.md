@@ -9,7 +9,7 @@
 3. проверяет дубликаты;
 4. одним атомарным Git commit добавляет WebP и запись в `app/data/cms-projects.json`;
 5. Vercel выполняет обычный deployment из `main`;
-6. GitHub Actions ждёт реальную страницу и только затем присылает подтверждённый URL.
+6. GitHub Actions сверяет exact slug, title, meta description, canonical и sitemap с данными конкретного Git commit и только затем присылает подтверждённый URL. Для Unpublish/Delete проверяются HTTP 404 и отсутствие URL в sitemap.
 
 Существующие проекты остаются в `app/data/projects.ts`. CMS их не перезаписывает.
 
@@ -130,7 +130,8 @@ unset CMS_BOT_TOKEN CMS_WEBHOOK_SECRET
 ## 10. Черновики и безопасность
 
 - **📝 Drafts** возобновляет текущий черновик.
-- Повторный Telegram update игнорируется по `update_id`.
+- Telegram update помечается завершённым только после успешной обработки. При временной ошибке claim освобождается, endpoint отвечает ошибкой, и Telegram может безопасно повторить update. Завершённый `update_id` хранится 7 дней и повторно не выполняется.
+- Все изменения одного owner ID сериализуются коротким Redis lock. Поэтому параллельно доставленные фотографии Telegram album не перезаписывают draft и не теряются; занятой update возвращается Telegram для повторной доставки.
 - Повторное нажатие Publish защищено статусом и Git fast-forward check.
 - Черновик автоматически удаляется из Redis через 30 дней.
 - Draft images не попадают в `public/` до Publish.
@@ -140,10 +141,12 @@ unset CMS_BOT_TOKEN CMS_WEBHOOK_SECRET
 ## 10.1 Управление опубликованными CMS-проектами
 
 - **📁 Published Projects** показывает проекты, созданные CMS, и отдельно reversible unpublished projects.
-- **Unpublish** убирает проект из публичного JSON, портфолио и sitemap, но сохраняет запись и фотографии для Republish.
-- **Republish** возвращает тот же slug и URL. Не используйте slug для другого проекта.
+- **Full in-place edit** создаёт защищённый draft из существующего CMS-проекта. Можно изменить текст, SEO title/description, service/category, подтверждённую location, удалить/добавить/переставить фотографии и изменить BEFORE/DURING/AFTER. Импортируйте JSON заново после изменения набора фотографий. Исходный slug и URL сохраняются независимо от `slug` в импортированном JSON.
+- **Unpublish** после отдельного подтверждения убирает проект из публичного JSON, портфолио и sitemap, но сохраняет запись и фотографии для Republish.
+- **Republish** также требует подтверждения и возвращает тот же slug и URL. Не используйте slug для другого проекта.
 - **Permanently delete** требует отдельного подтверждения, удаляет CMS-запись и её изображения из текущего Git tree. История Git остаётся технически восстановимой администраторами repository.
-- Для изменения текста или фотографий опубликованного проекта безопаснее сначала Unpublish, затем подготовить исправленную версию. Полное in-place редактирование индексируемого проекта намеренно не автоматизировано в первой версии, чтобы случайно не менять URL и внешние ссылки.
+
+После Publish/Edit/Unpublish/Republish/Delete workflow проверяет именно ожидаемое состояние конкретного slug. Сообщение об успехе не отправляется только по наличию произвольного `<h1>`.
 
 ## 11. Troubleshooting
 
@@ -155,6 +158,7 @@ unset CMS_BOT_TOKEN CMS_WEBHOOK_SECRET
 - **Duplicate photograph:** удалите повторное изображение из draft.
 - **JSON error:** используйте template версии 1 и все photo IDs из сообщения бота.
 - **Workflow failed:** откройте Actions → Confirm portfolio CMS publication. Проверьте Vercel build и оба Actions secrets.
+- **CMS owner workflow is busy:** Telegram доставил части album одновременно. Бот намеренно попросил Telegram повторить занятой update; дождитесь повторной доставки, не загружайте album заново вручную.
 - **Страница не появилась:** не публикуйте проект повторно с новым slug; сначала проверьте commit, Vercel deployment и workflow.
 
 ## Практические ограничения
@@ -162,5 +166,6 @@ unset CMS_BOT_TOKEN CMS_WEBHOOK_SECRET
 - Telegram сохраняет `file_id`, но URL скачивания выдаётся заново и гарантирован минимум на один час; CMS вызывает `getFile` непосредственно перед publication.
 - Репозиторий растёт с каждым WebP. Периодически контролируйте Git repository size.
 - Один Redis draft поддерживается на одного owner ID, что предотвращает случайное параллельное редактирование с телефона.
+- Redis lock действует 90 секунд. Обычный Vercel handler ограничен меньшим временем; если процесс аварийно завершился, lock автоматически истечёт и update сможет повториться.
 - Автоматический commit в `main` является production publication. Включайте `GITHUB_CMS_BRANCH=main` только после проверки Preview и отдельного разрешения владельца.
 - CMS управляет только проектами из `cms-projects.json`; существующие legacy-проекты намеренно остаются read-only, чтобы не рисковать их индексируемыми URL и фотографиями.

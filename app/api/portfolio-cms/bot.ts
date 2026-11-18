@@ -1,6 +1,7 @@
 import { cities } from "../../data/site.ts";
+import type { Project } from "../../data/projects.ts";
 import { changeProjectPublication, listPublishedProjects, listUnpublishedProjects, publishDraft } from "./publisher.ts";
-import { claimUpdate, getDraft, removeDraft, saveDraft } from "./store.ts";
+import { beginUpdate, completeUpdate, getDraft, releaseUpdate, removeDraft, saveDraft, withOwnerLock } from "./store.ts";
 import { contentTemplate, newDraft, validateImportedContent, type CmsDraft, type CmsStage } from "./types.ts";
 import { answerCallback, downloadTelegramTextFile, mainMenu, sendMessage } from "./telegram.ts";
 
@@ -42,7 +43,31 @@ function preview(draft: CmsDraft): string {
   const content = draft.content;
   if (!content) return `${counts(draft)}\n\nNo imported project content yet.`;
   const grouped = (["before", "progress", "after"] as CmsStage[]).map((stage) => `${stageName[stage]}: ${draft.photos.filter((p) => p.stage === stage).length}`).join(" · ");
-  return `<b>${escapeHtml(content.title)}</b>\n\n${escapeHtml(content.summary)}\n\n${escapeHtml(content.description)}\n\n<b>SEO title:</b> ${escapeHtml(content.seoTitle)}\n<b>Meta:</b> ${escapeHtml(content.metaDescription)}\n<b>URL:</b> /projects/${content.slug}\n<b>Service:</b> ${content.serviceSlug}\n<b>Location:</b> ${escapeHtml(content.location || draft.location || "Not supplied")}\n<b>Photos:</b> ${grouped}`;
+  const effectiveSlug = draft.editProjectId || content.slug;
+  return `<b>${escapeHtml(content.title)}</b>\n\n${escapeHtml(content.summary)}\n\n${escapeHtml(content.description)}\n\n<b>SEO title:</b> ${escapeHtml(content.seoTitle)}\n<b>Meta:</b> ${escapeHtml(content.metaDescription)}\n<b>URL:</b> /projects/${effectiveSlug}${draft.editProjectId ? " (preserved)" : ""}\n<b>Service:</b> ${content.serviceSlug}\n<b>Location:</b> ${escapeHtml(content.location || draft.location || "Not supplied")}\n<b>Photos:</b> ${grouped}`;
+}
+
+function editDraft(project: Project, wasPublished: boolean): CmsDraft {
+  const draft = newDraft();
+  draft.editProjectId = project.id;
+  draft.editWasPublished = wasPublished;
+  draft.status = "preview";
+  draft.location = project.location;
+  draft.photos = project.photos.map((photo, order) => ({ id: `existing-${order + 1}`, existingSrc: photo.src, stage: photo.stage, order }));
+  draft.content = {
+    version: 1,
+    title: project.title,
+    summary: project.summary,
+    description: project.description || project.summary,
+    seoTitle: project.seoTitle || `${project.title} | Handyman Tampa`,
+    metaDescription: project.metaDescription || project.summary.slice(0, 160),
+    slug: project.id,
+    serviceSlug: project.serviceSlug,
+    category: project.category,
+    location: project.location,
+    imageAlt: Object.fromEntries(project.photos.map((photo, index) => [`existing-${index + 1}`, photo.alt])),
+  };
+  return draft;
 }
 
 async function importJson(chatId: number, userId: string, draft: CmsDraft, raw: string) {
@@ -89,7 +114,9 @@ async function handleMessage(message: TgMessage, userId: string) {
     await saveDraft(userId, draft); await showDraft(chatId, draft, "Description saved."); return;
   }
   if (draft.status === "location" && message.text) {
-    draft.location = message.text.trim().slice(0, 100); draft.status = "photos"; draft.revision += 1;
+    draft.location = message.text.trim().slice(0, 100);
+    if (draft.content) draft.content.location = draft.location;
+    draft.status = "photos"; draft.revision += 1;
     await saveDraft(userId, draft); await showDraft(chatId, draft, "Location saved. Only use a city you confirmed."); return;
   }
   if (draft.status === "content") {
@@ -132,18 +159,39 @@ async function handleCallback(callback: TgCallback, userId: string) {
   if (action.startsWith("manage:")) {
     const id = action.slice(7);
     await sendMessage(chatId, `Manage <code>${escapeHtml(id)}</code>`, [
-      [{ text: "Unpublish (reversible)", callback_data: `unpub:${id}` }],
+      [{ text: "Full in-place edit", callback_data: `edit:${id}` }],
+      [{ text: "Unpublish (reversible)", callback_data: `askunpub:${id}` }],
       [{ text: "Permanently delete", callback_data: `askdel:${id}` }],
       [{ text: "Back", callback_data: "published" }],
     ]); return;
+  }
+  if (action.startsWith("edit:")) {
+    const id = action.slice(5);
+    const activeDraft = await getDraft(userId);
+    if (activeDraft) { await showDraft(chatId, activeDraft, "Finish or cancel the current draft before editing another project."); return; }
+    const [published, unpublished] = await Promise.all([listPublishedProjects(), listUnpublishedProjects()]);
+    const project = published.find((item) => item.id === id) || unpublished.find((item) => item.id === id);
+    if (!project) { await sendMessage(chatId, "Project no longer exists.", mainMenu); return; }
+    const draft = editDraft(project, published.some((item) => item.id === id));
+    await saveDraft(userId, draft);
+    await showDraft(chatId, draft, "Editing existing project in place. Its slug and URL will remain unchanged. Import updated JSON and manage photos, category, order or location before saving.");
+    return;
+  }
+  if (action.startsWith("askunpub:")) {
+    const id = action.slice(9);
+    await sendMessage(chatId, `Unpublish <code>${escapeHtml(id)}</code>? The public page and sitemap entry will be removed, but the project can be republished with the same URL.`, [[{ text: "Yes, unpublish", callback_data: `unpub:${id}` }], [{ text: "Cancel", callback_data: `manage:${id}` }]]); return;
+  }
+  if (action.startsWith("repub:")) {
+    const id = action.slice(6);
+    await sendMessage(chatId, `Republish <code>${escapeHtml(id)}</code> with its existing URL and content?`, [[{ text: "Yes, republish", callback_data: `confirmrepub:${id}` }], [{ text: "Cancel", callback_data: "published" }]]); return;
   }
   if (action.startsWith("askdel:")) {
     const id = action.slice(7);
     await sendMessage(chatId, `Permanently delete <code>${escapeHtml(id)}</code>, its CMS data and project images? This cannot be undone.`, [[{ text: "Yes, permanently delete", callback_data: `delete:${id}` }], [{ text: "Cancel", callback_data: `manage:${id}` }]]); return;
   }
-  if (/^(unpub|repub|delete):/.test(action)) {
+  if (/^(unpub|confirmrepub|delete):/.test(action)) {
     const [operation, id] = action.split(":");
-    const mapped = operation === "unpub" ? "unpublish" : operation === "repub" ? "republish" : "delete";
+    const mapped = operation === "unpub" ? "unpublish" : operation === "confirmrepub" ? "republish" : "delete";
     try {
       const sha = await changeProjectPublication(id, mapped);
       await sendMessage(chatId, `✅ ${mapped} commit created: <code>${sha.slice(0, 12)}</code>. GitHub/Vercel will now rebuild the site.`, mainMenu);
@@ -167,7 +215,7 @@ async function handleCallback(callback: TgCallback, userId: string) {
     draft.status = "location"; await saveDraft(userId, draft);
     await sendMessage(chatId, `Send the confirmed project city, or choose Skip. Existing service-area cities include:\n${cities.map((city) => city.name).join(", ")}`, [[{ text: "Skip", callback_data: "skip_location" }], [{ text: "Back", callback_data: "back" }]]); return;
   }
-  if (action === "skip_location") { delete draft.location; draft.status = "photos"; await saveDraft(userId, draft); await showDraft(chatId, draft, "Location omitted. The project will not claim a city."); return; }
+  if (action === "skip_location") { delete draft.location; if (draft.content) delete draft.content.location; draft.status = "photos"; draft.revision += 1; await saveDraft(userId, draft); await showDraft(chatId, draft, "Location omitted. The project will not claim a city."); return; }
   if (action === "template") {
     const ids = draft.photos.map((photo) => `${photo.id} (${stageName[photo.stage]})`).join(", ") || "Upload photos first";
     await sendMessage(chatId, `<b>Photo IDs:</b> ${ids}\n\n<pre>${JSON.stringify(contentTemplate, null, 2).replace(/</g, "&lt;")}</pre>`); return;
@@ -191,6 +239,9 @@ async function handleCallback(callback: TgCallback, userId: string) {
   if (action === "confirm_cancel") { await removeDraft(userId); await sendMessage(chatId, "Draft deleted.", mainMenu); return; }
   if (action === "publish") {
     if (!draft.content || !draft.photos.length) { await sendMessage(chatId, "Add at least one photo and valid imported content before publishing."); return; }
+    const currentValidation = validateImportedContent(draft.content, draft.photos.map((photo) => photo.id));
+    if (!currentValidation.ok) { await sendMessage(chatId, `Reimport content before publishing:\n• ${currentValidation.errors.join("\n• ")}`); return; }
+    draft.content = currentValidation.value;
     const revision = draft.revision; draft.status = "publishing"; await saveDraft(userId, draft);
     await sendMessage(chatId, "Publishing started. Photos are being optimized and committed atomically. Do not edit this draft until the result arrives.");
     try {
@@ -211,7 +262,20 @@ export async function processTelegramUpdate(update: TelegramUpdate): Promise<voi
   const chatId = update.message?.chat.id ?? update.callback_query?.message?.chat.id;
   if (!user || !chatId) return;
   if (!isAuthorizedTelegramUser(user)) { await sendMessage(chatId, "This private CMS is not available for this account."); return; }
-  if (!(await claimUpdate(update.update_id))) return;
-  if (update.callback_query) await handleCallback(update.callback_query, String(user));
-  else if (update.message) await handleMessage(update.message, String(user));
+  const claim = await beginUpdate(update.update_id);
+  if (claim.status !== "acquired") {
+    if (claim.status === "done") return;
+    throw new Error("Telegram update is already processing");
+  }
+  const claimToken = claim.token;
+  try {
+    await withOwnerLock(String(user), async () => {
+      if (update.callback_query) await handleCallback(update.callback_query, String(user));
+      else if (update.message) await handleMessage(update.message, String(user));
+    });
+    if (!(await completeUpdate(update.update_id, claimToken))) throw new Error("Unable to finalize Telegram update");
+  } catch (error) {
+    await releaseUpdate(update.update_id, claimToken).catch(() => undefined);
+    throw error;
+  }
 }

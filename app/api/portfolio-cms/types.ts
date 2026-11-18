@@ -3,8 +3,9 @@ import { cities, services } from "../../data/site.ts";
 export type CmsStage = "before" | "progress" | "after";
 export type DraftPhoto = {
   id: string;
-  telegramFileId: string;
-  telegramUniqueId: string;
+  telegramFileId?: string;
+  telegramUniqueId?: string;
+  existingSrc?: string;
   stage: CmsStage;
   order: number;
 };
@@ -36,6 +37,8 @@ export type CmsDraft = {
   createdAt: string;
   updatedAt: string;
   error?: string;
+  editProjectId?: string;
+  editWasPublished?: boolean;
 };
 
 export const contentTemplate = {
@@ -57,7 +60,9 @@ const clean = (value: unknown, max: number) => typeof value === "string" ? value
 const hasUnsafeMarkup = (value: string) => /[<>]|javascript:|data:text\/html/i.test(value);
 
 export function sanitizeSlug(value: string): string {
-  return value.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 72);
+  // Telegram callback_data is limited to 64 bytes. Keeping CMS slugs at 48
+  // ASCII characters leaves room for the longest management action prefix.
+  return value.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 48).replace(/-+$/g, "");
 }
 
 export function validateImportedContent(input: unknown, photoIds: string[]): { ok: true; value: ImportedContent } | { ok: false; errors: string[] } {

@@ -5,37 +5,43 @@ on:
     branches: [main]
     paths:
       - "app/data/cms-projects.json"
+      - "app/data/cms-unpublished-projects.json"
       - "public/projects/**"
 
 permissions:
   contents: read
 
 jobs:
-  confirm-live-page:
-    if: startsWith(github.event.head_commit.message, 'portfolio: publish ')
+  confirm-live-project-state:
+    if: startsWith(github.event.head_commit.message, 'portfolio: ')
     runs-on: ubuntu-latest
     steps:
-      - name: Find newest CMS project slug
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Read exact CMS action and slug
         id: project
+        env:
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
-          slug=$(curl -fsSL "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/app/data/cms-projects.json" | jq -r '.[-1].id')
-          test -n "$slug" && test "$slug" != "null"
-          echo "slug=$slug" >> "$GITHUB_OUTPUT"
-      - name: Wait for Vercel production page
-        run: |
-          url="https://handymantampa.net/projects/${{ steps.project.outputs.slug }}"
-          for attempt in $(seq 1 60); do
-            if curl -fsSL --max-time 15 "$url" | grep -q '<h1'; then exit 0; fi
-            sleep 10
-          done
-          exit 1
-      - name: Send confirmed URL to Telegram
+          first_line="${COMMIT_MESSAGE%%$'\n'*}"
+          if [[ ! "$first_line" =~ ^portfolio:\ (publish|edit|republish|unpublish|delete)\ ([a-z0-9]+(-[a-z0-9]+)*)$ ]]; then
+            echo "Unexpected CMS commit message" >&2
+            exit 1
+          fi
+          echo "action=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+          echo "slug=${BASH_REMATCH[2]}" >> "$GITHUB_OUTPUT"
+      - name: Verify exact deployed project content and sitemap state
+        run: node .github/scripts/verify-portfolio-deployment.mjs "${{ steps.project.outputs.action }}" "${{ steps.project.outputs.slug }}" app/data/cms-projects.json
+      - name: Send verified state to Telegram
         env:
           BOT_TOKEN: ${{ secrets.TELEGRAM_CMS_BOT_TOKEN }}
           OWNER_ID: ${{ secrets.TELEGRAM_CMS_OWNER_ID }}
+          ACTION: ${{ steps.project.outputs.action }}
+          SLUG: ${{ steps.project.outputs.slug }}
         run: |
           test -n "$BOT_TOKEN" && test -n "$OWNER_ID"
-          url="https://handymantampa.net/projects/${{ steps.project.outputs.slug }}"
+          url="https://handymantampa.net/projects/${SLUG}"
           curl -fsSL -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
             --data-urlencode "chat_id=${OWNER_ID}" \
-            --data-urlencode "text=✅ Published and verified: ${url}"
+            --data-urlencode "text=✅ ${ACTION} verified for the exact project: ${url}"

@@ -46,6 +46,7 @@ async function telegramFile(fileId: string): Promise<Buffer> {
 }
 
 export async function optimizePhoto(photo: DraftPhoto): Promise<{ bytes: Buffer; digest: string }> {
+  if (!photo.telegramFileId) throw new Error("A new draft photo is missing its Telegram file reference");
   const source = await telegramFile(photo.telegramFileId);
   const bytes = await optimizeImageBuffer(source);
   return { bytes, digest: createHash("sha256").update(bytes).digest("hex") };
@@ -84,6 +85,7 @@ async function readProjectFile(path: string): Promise<Project[]> {
 
 export async function publishDraft(draft: CmsDraft): Promise<{ commitSha: string; url: string }> {
   if (!draft.content || !draft.photos.length) throw new Error("Draft needs content and at least one photo");
+  if (draft.editProjectId) return editDraftProject(draft);
   const content = draft.content;
   if (projects.some((project) => project.id === content.slug)) throw new Error("This project URL already exists");
   const remoteProjects = await readCmsProjects();
@@ -133,6 +135,79 @@ export async function publishDraft(draft: CmsDraft): Promise<{ commitSha: string
   return { commitSha: commit.sha, url: `https://handymantampa.net/projects/${content.slug}` };
 }
 
+async function editDraftProject(draft: CmsDraft): Promise<{ commitSha: string; url: string }> {
+  const id = draft.editProjectId!;
+  const [published, unpublished] = await Promise.all([readCmsProjects(), listUnpublishedProjects()]);
+  const target = draft.editWasPublished ? published : unpublished;
+  const existing = target.find((project) => project.id === id);
+  if (!existing) throw new Error("The project changed or no longer exists in its expected state");
+
+  const orderedDraftPhotos = [...draft.photos].sort((a, b) => a.order - b.order);
+  const newDraftPhotos = orderedDraftPhotos.filter((photo) => !photo.existingSrc);
+  const optimized = await Promise.all(newDraftPhotos.map(async (photo) => ({ photo, ...(await optimizePhoto(photo)) })));
+  if (new Set(optimized.map((item) => item.digest)).size !== optimized.length) throw new Error("Duplicate new photographs were detected");
+  const optimizedById = new Map(optimized.map((item) => [item.photo.id, item]));
+  const newImagePaths = new Map(newDraftPhotos.map((photo) => [photo.id, `public/projects/${id}-${photo.stage}-${photo.id}.webp`]));
+  const project = buildEditedProject(existing, draft, newImagePaths);
+  const photos = project.photos;
+  const nextTarget = target.map((item) => item.id === id ? project : item);
+  const nextPublished = draft.editWasPublished ? nextTarget : published;
+  const nextUnpublished = draft.editWasPublished ? unpublished : nextTarget;
+
+  const ref = await github<GithubRef>(`/git/ref/heads/${encodeURIComponent(branch())}`);
+  const parent = await github<GithubCommit>(`/git/commits/${ref.object.sha}`);
+  const [publishedBlob, unpublishedBlob, ...photoBlobs] = await Promise.all([
+    createBlob(`${JSON.stringify(nextPublished, null, 2)}\n`, "utf-8"),
+    createBlob(`${JSON.stringify(nextUnpublished, null, 2)}\n`, "utf-8"),
+    ...newDraftPhotos.map((photo) => createBlob(optimizedById.get(photo.id)!.bytes, "base64")),
+  ]);
+  const retained = new Set(photos.map((photo) => photo.src));
+  const removedPaths = existing.photos.map((photo) => photo.src).filter((src) => !retained.has(src));
+  const treeEntries: Array<Record<string, unknown>> = [
+    { path: "app/data/cms-projects.json", mode: "100644", type: "blob", sha: publishedBlob.sha },
+    { path: "app/data/cms-unpublished-projects.json", mode: "100644", type: "blob", sha: unpublishedBlob.sha },
+    ...newDraftPhotos.map((photo, index) => ({ path: newImagePaths.get(photo.id), mode: "100644", type: "blob", sha: photoBlobs[index].sha })),
+    ...removedPaths.filter((src) => src.startsWith(`/projects/${id}-`)).map((src) => ({ path: `public${src}`, mode: "100644", type: "blob", sha: null })),
+  ];
+  const tree = await github<{ sha: string }>("/git/trees", { method: "POST", body: JSON.stringify({ base_tree: parent.tree.sha, tree: treeEntries }) });
+  const commit = await github<{ sha: string }>("/git/commits", {
+    method: "POST",
+    body: JSON.stringify({ message: `portfolio: edit ${id}`, tree: tree.sha, parents: [ref.object.sha] }),
+  });
+  await github(`/git/refs/heads/${encodeURIComponent(branch())}`, { method: "PATCH", body: JSON.stringify({ sha: commit.sha, force: false }) });
+  return { commitSha: commit.sha, url: `https://handymantampa.net/projects/${id}` };
+}
+
+export function buildEditedProject(existing: Project, draft: CmsDraft, newImagePaths: Map<string, string>): Project {
+  if (!draft.content || !draft.editProjectId || !draft.photos.length) throw new Error("Invalid project edit draft");
+  const photos = [...draft.photos].sort((a, b) => a.order - b.order).map((photo) => {
+    const newPath = newImagePaths.get(photo.id);
+    if (!photo.existingSrc && !newPath) throw new Error(`Missing optimized image for ${photo.id}`);
+    return {
+      src: photo.existingSrc || `/${newPath!.replace(/^public\//, "")}`,
+      alt: draft.content!.imageAlt[photo.id],
+      caption: draft.content!.imageAlt[photo.id],
+      stage: photo.stage,
+    };
+  });
+  const cover = (photos.find((photo) => photo.stage === "after") || photos[0]).src;
+  return {
+    ...existing,
+    id: draft.editProjectId,
+    title: draft.content.title,
+    category: draft.content.category,
+    serviceSlug: draft.content.serviceSlug,
+    summary: draft.content.summary,
+    description: draft.content.description,
+    seoTitle: draft.content.seoTitle,
+    metaDescription: draft.content.metaDescription,
+    location: draft.content.location || draft.location,
+    cover,
+    photos,
+    detailPage: true,
+  };
+}
+
 export async function listPublishedProjects(): Promise<Project[]> {
   return readCmsProjects();
 }
@@ -141,25 +216,41 @@ export async function listUnpublishedProjects(): Promise<Project[]> {
   return readProjectFile("app/data/cms-unpublished-projects.json");
 }
 
-export async function changeProjectPublication(id: string, action: "unpublish" | "republish" | "delete"): Promise<string> {
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id)) throw new Error("Invalid project ID");
-  const [published, unpublished] = await Promise.all([readCmsProjects(), listUnpublishedProjects()]);
+export function transitionProjectPublication(
+  published: Project[],
+  unpublished: Project[],
+  id: string,
+  action: "unpublish" | "republish" | "delete",
+): { published: Project[]; unpublished: Project[]; project: Project } {
   const source = action === "republish" ? unpublished : published;
   const project = source.find((item) => item.id === id);
   if (!project) throw new Error("Project was not found in the expected state");
-  let nextPublished = published;
-  let nextUnpublished = unpublished;
   if (action === "unpublish") {
-    nextPublished = published.filter((item) => item.id !== id);
-    nextUnpublished = [...unpublished.filter((item) => item.id !== id), project];
-  } else if (action === "republish") {
-    if (published.some((item) => item.id === id)) throw new Error("Published URL already exists");
-    nextUnpublished = unpublished.filter((item) => item.id !== id);
-    nextPublished = [...published, project];
-  } else {
-    nextPublished = published.filter((item) => item.id !== id);
-    nextUnpublished = unpublished.filter((item) => item.id !== id);
+    return {
+      published: published.filter((item) => item.id !== id),
+      unpublished: [...unpublished.filter((item) => item.id !== id), project],
+      project,
+    };
   }
+  if (action === "republish") {
+    if (published.some((item) => item.id === id)) throw new Error("Published URL already exists");
+    return {
+      published: [...published, project],
+      unpublished: unpublished.filter((item) => item.id !== id),
+      project,
+    };
+  }
+  return {
+    published: published.filter((item) => item.id !== id),
+    unpublished: unpublished.filter((item) => item.id !== id),
+    project,
+  };
+}
+
+export async function changeProjectPublication(id: string, action: "unpublish" | "republish" | "delete"): Promise<string> {
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id)) throw new Error("Invalid project ID");
+  const [published, unpublished] = await Promise.all([readCmsProjects(), listUnpublishedProjects()]);
+  const { published: nextPublished, unpublished: nextUnpublished, project } = transitionProjectPublication(published, unpublished, id, action);
 
   const ref = await github<GithubRef>(`/git/ref/heads/${encodeURIComponent(branch())}`);
   const parent = await github<GithubCommit>(`/git/commits/${ref.object.sha}`);
