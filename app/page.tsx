@@ -5,7 +5,7 @@ import { business } from "./data/business";
 import { cities, services } from "./data/site";
 import { projects } from "./data/projects";
 import Portfolio from "./components/Portfolio";
-import Reviews from "./components/Reviews";
+import Reviews, { TrustStrip } from "./components/Reviews";
 import EstimateForm from "./components/EstimateForm";
 import TrackingLink from "./components/TrackingLink";
 import BusinessJsonLd from "./components/BusinessJsonLd";
@@ -75,7 +75,6 @@ export default function Home() {
                 Text Project Photos
               </TrackingLink>
             </div>
-            <p className="mt-5 text-[13px] text-[#a5a5ac]">Real job photos • Thumbtack reviews linked to their original source</p>
           </div>
           <aside className="overflow-hidden rounded-[20px] border border-[#393b42] bg-[#1c2028]">
             <Link href="/projects/wood-deck-build" className="group block">
@@ -87,6 +86,8 @@ export default function Home() {
           </aside>
       </section>
 
+      <TrustStrip />
+      <Reviews />
       <Portfolio
         featuredOnly
         limit={6}
@@ -214,7 +215,6 @@ export default function Home() {
         </div>
       </section>
 
-      <Reviews />
       <EstimateForm />
       <section id="contact" className="bg-yellow-400 px-5 py-14 text-neutral-950">
         <div className="mx-auto max-w-4xl text-center">

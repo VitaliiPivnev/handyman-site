@@ -175,7 +175,7 @@ test("real portfolio inventory and contact details remain intact", async () => {
   assert.ok(projects.every((project) => project.photos.length > 0));
   const business = await readSource("app/data/business.ts");
   assert.match(business, /phone: "\+13054650028"/);
-  const reviews = await readSource("app/components/Reviews.tsx");
+  const reviews = await readSource("app/data/reviews.ts");
   assert.match(reviews, /thumbtack\.com/);
   assert.doesNotMatch(reviews, /★★★★★|Average rating|Customer Review/);
 });
