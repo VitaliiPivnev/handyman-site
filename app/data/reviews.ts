@@ -1,14 +1,18 @@
 export const reviewSources = {
-  google: { label: "Google", url: null as string | null },
+  google: { label: "Google", mark: "G", url: "https://www.google.com/search?kgmid=/g/11ybpxtyc2&q=Vitalii+Handyman" },
   thumbtack: {
     label: "Thumbtack",
-    url: "https://www.thumbtack.com/fl/tampa/handyman/vitalii-handypro/service/528569101242605578",
+    mark: "T",
+    url: "https://www.thumbtack.com/fl/tampa/handyman/vitalii-handypro/service/528569101242605578#reviews",
   },
 };
 
 export type ReviewPlatform = keyof typeof reviewSources;
 export type ReviewFilter = "all" | ReviewPlatform;
 export type CustomerReview = {
+  id: string;
+  approved: boolean;
+  sourceVerified: boolean;
   reviewer: string;
   platform: ReviewPlatform;
   text: string;
@@ -22,5 +26,5 @@ export type CustomerReview = {
 export const customerReviews: readonly CustomerReview[] = [];
 
 export function filterReviews(reviews: readonly CustomerReview[], filter: ReviewFilter) {
-  return reviews.filter((review) => filter === "all" || review.platform === filter);
+  return reviews.filter((review) => review.approved && review.sourceVerified && (filter === "all" || review.platform === filter));
 }

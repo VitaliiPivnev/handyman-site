@@ -5,16 +5,18 @@ import { customerReviews, filterReviews, reviewSources, type CustomerReview } fr
 
 test("filters real records by source and keeps empty feeds empty", () => {
   const records = (["google", "thumbtack"] as const).map((platform): CustomerReview => ({
-    platform, reviewer: "Test fixture", text: "Test fixture", sourceUrl: "https://example.test",
+    id: platform, approved: true, sourceVerified: true, platform, reviewer: "Test fixture", text: "Test fixture", sourceUrl: "https://example.test",
   }));
   assert.deepEqual(filterReviews(records, "all"), records);
   assert.deepEqual(filterReviews(records, "google"), [records[0]]);
   assert.deepEqual(filterReviews(records, "thumbtack"), [records[1]]);
+  assert.deepEqual(filterReviews([{ ...records[0], approved: false }, { ...records[1], sourceVerified: false }], "all"), []);
   assert.deepEqual(filterReviews(customerReviews, "all"), []);
   assert.equal(reviewSources.google.label, "Google");
   assert.equal(reviewSources.thumbtack.label, "Thumbtack");
   assert.equal(new URL(reviewSources.thumbtack.url).hostname, "www.thumbtack.com");
-  assert.equal(reviewSources.google.url, null);
+  assert.equal(new URL(reviewSources.google.url).searchParams.get("kgmid"), "/g/11ybpxtyc2");
+  assert.equal(new URL(reviewSources.thumbtack.url).hash, "#reviews");
 });
 
 test("trust and review controls precede the portfolio with accessible fallback and no autoplay", async () => {
